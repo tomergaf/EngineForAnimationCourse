@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "Display.h"
 
-#define SCENE SceneWithCameras // the scene (class name) to display
+#define SCENE BasicScene // the scene (class name) to display
 
 #define STRINGIFY(X) #X
 #define CLASS_NAME_TO_HEADER(X) STRINGIFY(X.h)
@@ -19,7 +19,7 @@ int main()
     const float FAR = 120.0f;
 
     Renderer renderer;
-    Display display("Demo", DISPLAY_WIDTH, DISPLAY_HEIGHT, &renderer);
+    Display display("Assignment1", DISPLAY_WIDTH, DISPLAY_HEIGHT, &renderer);
     std::cout.setstate(std::ios_base::failbit); // suppress junk output to console from igl::opengl::glfw::Viewer
     auto scene = std::make_shared<SCENE>(STRINGIFY(SCENE), &display);
     std::cout.clear(); // re-enable output to console
@@ -48,14 +48,14 @@ int main()
 //    Renderer renderer;
 //    Display display("Demo", DISPLAY_WIDTH, DISPLAY_HEIGHT, &renderer);
 //    std::cout.setstate(std::ios_base::failbit); // suppress junk output to console from igl::opengl::glfw::Viewer
-//    auto scene1 = std::make_shared<SimpleScene>("SimpleScene", &display);
+//  //  auto scene1 = std::make_shared<SimpleScene>("SimpleScene", &display);
 //    auto scene2 = std::make_shared<BasicScene>("BasicScene", &display);
 //    std::cout.clear(); // re-enable output to console
-//    scene1->Init(CAMERA_ANGLE, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT, NEAR, FAR);
+//  //  scene1->Init(CAMERA_ANGLE, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT, NEAR, FAR);
 //    scene2->Init(CAMERA_ANGLE, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT, NEAR, FAR);
-//    auto viewport1 = std::make_shared<Viewport>("LeftViewport", 0, 0, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT, scene1);
+////    auto viewport1 = std::make_shared<Viewport>("LeftViewport", 0, 0, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT, scene1);
 //    auto viewport2 = std::make_shared<Viewport>("RightViewport", DISPLAY_WIDTH / 2, 0, DISPLAY_WIDTH / 2, DISPLAY_HEIGHT, scene2);
-//    renderer.AddViewport(viewport1);
+//    //renderer.AddViewport(viewport1);
 //    renderer.AddViewport(viewport2);
 //    display.LaunchRendering(true);
 //
