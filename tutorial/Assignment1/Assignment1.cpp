@@ -28,6 +28,7 @@ int main()
     renderer.AddViewport(scene);
     display.LaunchRendering(true);
 
+    
     return 0;
 }
 
