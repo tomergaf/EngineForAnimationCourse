@@ -4,6 +4,7 @@
 #include "ObjLoader.h"
 #include "IglMeshLoader.h"
 #include "igl/read_triangle_mesh.cpp"
+#include "igl/per_vertex_normals.h"
 #include "igl/edge_flaps.h"
 #include <igl/circulation.h>
 #include <igl/collapse_edge.h>
@@ -26,7 +27,6 @@
 #include "file_dialog_open.h"
 #include "GLFW/glfw3.h"
 
-
 #include <set>
 
 using namespace cg3d;
@@ -37,6 +37,7 @@ using namespace igl;
 
 void BasicScene::Init(float fov, int width, int height, float near, float far)
 {
+	currcycle = 0;
 	camera = Camera::Create("camera", fov, float(width) / float(height), near, far);
 	auto program = std::make_shared<Program>("shaders/basicShader");
 	auto material = std::make_shared<Material>("material", program); // empty material
@@ -56,163 +57,160 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
 	auto cylMesh{IglLoader::MeshFromFiles("cyl_igl", "data/camel_b.obj")};
 	auto cubeMesh{IglLoader::MeshFromFiles("cube_igl", "data/cube.off")};
 
-	std::vector<MeshData> sphereMeshVector;
-	std::vector<std::shared_ptr<Mesh>> sphereMeshmVector;
-	std::vector<MeshData> cylMeshVector;
-	std::vector<MeshData> cubeMeshVector;
+	#pragma region decimate
 
-	cylMeshVector.push_back(cylMesh->data[0]);
-	sphereMeshVector.push_back(sphereMesh->data[0]);
-	cubeMeshVector.push_back(cubeMesh->data[0]);
-
-	MatrixXd V, OV;
-	MatrixXi F, OF;
-	// read_triangle_mesh("data/camel_b.obj", OV, OF);
-	// OV = cubeMeshVector.at(0).vertices;
-	// OF = cubeMeshVector.at(0).faces;
-	OV = sphereMeshVector.at(0).vertices;
-	OF = sphereMeshVector.at(0).faces;
-	// OV = cylMeshVector.at(0).vertices;
-	// OF = cylMeshVector.at(0).faces;
-
-	Eigen::VectorXi EMAP;
-	Eigen::MatrixXi E, EF, EI;
-	Eigen::VectorXi EQ;
-	igl::min_heap<std::tuple<double, int, int>> Q;
-
-	MatrixXd C;
-	int num_collapsed;
-
-	// RESET
-	auto reset = [&]() mutable
+	auto preDecimateMesh = [&](std::shared_ptr<cg3d::Mesh> mesh)
 	{
-		F = OF;
-		V = OV;
-		edge_flaps(F, E, EMAP, EF, EI);
-		C.resize(E.rows(), V.cols());
-		VectorXd costs(E.rows());
-		// https://stackoverflow.com/questions/2852140/priority-queue-clear-method
-		// Q.clear();
 
-		Q = {};
-		EQ = Eigen::VectorXi::Zero(E.rows());
+		MatrixXd V, OV;
+		MatrixXi F, OF;
+		
+		OV = mesh->data[0].vertices;
+		OF = mesh->data[0].faces;
+
+		Eigen::VectorXi EMAP;
+		Eigen::MatrixXi E, EF, EI;
+		Eigen::VectorXi EQ;
+		igl::min_heap<std::tuple<double, int, int>> Q;
+
+		MatrixXd C;
+		int num_collapsed;
+
+		// reset function
+		#pragma region reset
+		auto reset = [&]() mutable
 		{
-			Eigen::VectorXd costs(E.rows());
-			igl::parallel_for(
-				E.rows(), [&](const int e)
-				{
+			F = OF;
+			V = OV;
+			edge_flaps(F, E, EMAP, EF, EI);
+			C.resize(E.rows(), V.cols());
+			VectorXd costs(E.rows());
+			// https://stackoverflow.com/questions/2852140/priority-queue-clear-method
+			// Q.clear();
+
+			Q = {};
+			EQ = Eigen::VectorXi::Zero(E.rows());
+			{
+				Eigen::VectorXd costs(E.rows());
+				igl::parallel_for(
+					E.rows(), [&](const int e)
+					{
 				double cost = e;
 				RowVectorXd p(1, 3);
 				shortest_edge_and_midpoint(e, V, F, E, EMAP, EF, EI, cost, p);
 				C.row(e) = p;
 				costs(e) = cost; },
-				10000);
-			for (int e = 0; e < E.rows(); e++)
-			{
-				Q.emplace(costs(e), e, 0);
-			}
-			num_collapsed = 0;
-		}
-	};
-	// one cut attempt
-
-	auto cutedges = [&]() mutable
-	{
-		if (!Q.empty())
-		{
-			// collapse edge
-			const int max_iter = std::ceil(0.06 * Q.size());
-			for (int j = 0; j < max_iter; j++)
-			{
-				if (!collapse_edge(shortest_edge_and_midpoint, V, F, E, EMAP, EF, EI, Q, EQ, C))
+					10000);
+				for (int e = 0; e < E.rows(); e++)
 				{
-					break;
+					Q.emplace(costs(e), e, 0);
 				}
-				num_collapsed++;
+				num_collapsed = 0;
 			}
-		//sphereMeshmVector.push_back(make_shared<Mesh>("cut", V, F, sphereMesh->data[0].vertexNormals, sphereMesh->data[0].textureCoords));
-		//sphereMesh->data.push_back(make_shared<MeshData>{ V, F});
-		sphereMesh->data.push_back(MeshData{V, F});
+		};
+
+		#pragma endregion
+
+		// collapse function
+		#pragma region collapse
+		auto cutedges = [&]() mutable
+		{
+			if (!Q.empty())
+			{
+				// collapse edge
+				// the magic number changes how much edges collapse
+				const int max_iter = std::ceil(0.02 * Q.size());
+				for (int j = 0; j < max_iter; j++)
+				{
+					if (!collapse_edge(shortest_edge_and_midpoint, V, F, E, EMAP, EF, EI, Q, EQ, C))
+					{
+						break;
+					}
+					num_collapsed++;
+				}
+				//get the missing vars for a mesh
+				Eigen::MatrixXd VN;
+				igl::per_vertex_normals(V, F, VN);
+        		Eigen::MatrixXd TC = Eigen::MatrixXd::Zero(V.rows(),2);
+				mesh->data.push_back(MeshData{V, F, VN, TC});
+				debug_print(num_collapsed);
+			}
+		};
+
+		#pragma endregion
+
+		reset();
+		for (int i = 0; i < 10; i++)
+		{
+			cutedges();
 		}
 	};
-	reset();
-	cutedges();
-	cutedges();
-	cutedges();
 
-	// test sort this later and makes cycle change by clicking space
+	#pragma endregion
+
 
 	/*
 	STOPPED HERE:
-	- need to use a automorphingmodel to switch between meshdatas
-	- need to connect a callback for clicking space and increasing cycle count
-	- need to link picker to model mesh to cycle
-	- need to tidy this up in general and have a good chronological order
-	- need to check how many edges are being removed
-	- still need to make another collapse edge function as requested
-	
+	- need to use a automorphingmodel to switch between meshdatas - Done
+	- need to connect a callback for clicking space and increasing cycle count - Done
+	- need to link picker to model mesh to cycle - TODO
+	- need to tidy this up in general and have a good chronological order - TODO
+	- need to check how many edges are being removed - TODO - edges are counted, add which model are they from
+	- still need to make another collapse edge function as requested - TODO - use the algorithm from the lecture to replace the collapse edges algorithm supplied
+
 	*/
 
-	int currcycle=2;
-	auto blank{std::make_shared<Material>("blank", program)};
-    auto test{Model::Create("test", sphereMesh, blank)};
+	preDecimateMesh(sphereMesh);
+	//preDecimateMesh(cylMesh); //TODO - figure out why this doesnt work with high magic
+	preDecimateMesh(cubeMesh);
 
-	auto morphFunc = [&](int currcycle) {
-        float cycle = sphereMesh->data.size()%currcycle ;
-        
-        return cycle;
-    };
-    auto sphere2 = AutoMorphingModel::Create(*test, morphFunc);
-
-	//auto cutmesh = make_shared<Mesh>("cut", V, F, sphereMesh->data[0].vertexNormals, sphereMesh->data[0].textureCoords);
-	/* sphereMeshmVector.push_back(cutmesh);
-	cutedges;
-	cutmesh = make_shared<Mesh>("cut", V, F, sphereMesh->data[0].vertexNormals, sphereMesh->data[0].textureCoords);
-	 *///sphereMeshmVector.push_back(cutmesh);
-	//cutedges;
-	//cutmesh = make_shared<Mesh>("cut", V, F, sphereMesh->data[0].vertexNormals, sphereMesh->data[0].textureCoords);
-	//sphereMeshmVector.push_back(cutmesh);
-	// auto cutmesh = make_shared<Mesh>("cut", V, F, cylMesh->data[0].vertexNormals, cylMesh->data[0].textureCoords);
-	// auto cutmesh = make_shared<Mesh>("cut", V, F, cubeMesh->data[0].vertexNormals, cubeMesh->data[0].textureCoords);
-
-	// change these to get mesh from automorphingmodel
-	//sphere2 = Model::Create("sphere_cut", sphereMeshmVector.at(1), material);
-	sphere1 = Model::Create("sphere", sphereMesh, material);
-	//sphere2 = Model::Create("sphere_cut", sphereMeshmVector.at(0), material);
-	//sphere3 = Model::Create("sphere_cut", sphereMeshmVector.at(1), material);
-	//sphere4 = Model::Create("sphere_cut", sphereMeshmVector.at(2), material);
+	// morphing function - cycles through mesh indices by comparing to times pressed space
+	// TODO - make this aware of the clicked item instead of globally cycling all meshes
+	auto morphFunc = [=](Model *model, cg3d::Visitor *visitor)
+	{
+		int cycle = currcycle % model->GetMesh()->data.size(); // curr cycle is number of times space pressed
+		// modulo is so to get a valid number of mesh to choose -> 13 clicks -> mesh 3
+		return cycle;
+	};
 	
+	// model creation for automotphing
+	sphere1 = Model::Create("sphere", sphereMesh, material);
 	cyl = Model::Create("cyl", cylMesh, material);
 	cube = Model::Create("cube", cubeMesh, material);
-	sphere1->Scale(2);
-	sphere1->showWireframe = true;
-	sphere1->Translate({-3, 0, 0});
-	sphere2->Scale(2);
-	sphere2->showWireframe = true;
-	sphere2->Translate({-6, 0, 0});
-	sphere3->Scale(2);
-	sphere3->showWireframe = true;
-	sphere3->Translate({-9, 0, 0});
-	sphere4->Scale(2);
-	sphere4->showWireframe = true;
-	sphere4->Translate({-12, 0, 0});
-	cyl->Translate({3, 0, 0});
-	cyl->Scale(0.12f);
-	cyl->showWireframe = true;
-	cube->showWireframe = true;
+
+	auto autoSphere1 = AutoMorphingModel::Create(*sphere1, morphFunc);
+	auto autoCube = AutoMorphingModel::Create(*cube, morphFunc);
+	auto autoCyl = AutoMorphingModel::Create(*cyl, morphFunc);
+
+	// object setup
+
+	autoSphere1->Scale(2);
+	autoSphere1->showWireframe = true;
+	autoSphere1->Translate({-3, 0, 0});
+	autoCyl->Translate({3, 0, 0});
+	autoCyl->Scale(0.12f);
+	autoCyl->showWireframe = true;
+	autoCube->showWireframe = true;
 	camera->Translate(20, Axis::Z);
-	root->AddChild(sphere1);
-	root->AddChild(sphere2);
-	root->AddChild(sphere3);
-	root->AddChild(sphere4);
-	root->AddChild(cyl);
-	root->AddChild(cube);
+	root->AddChild(autoSphere1);
+	root->AddChild(autoCyl);
+	root->AddChild(autoCube);
 
 }
 
 void BasicScene::Update(const Program &program, const Eigen::Matrix4f &proj, const Eigen::Matrix4f &view, const Eigen::Matrix4f &model)
 {
 	Scene::Update(program, proj, view, model);
+}
 
-	cube->Rotate(0.01f, Axis::XYZ);
+void BasicScene::KeyCallback(Viewport *_viewport, int x, int y, int key, int scancode, int action, int mods)
+{
+	// TODO make this aware of picked object
+	if (action == GLFW_PRESS || action == GLFW_REPEAT)
+	{
+		if (key == GLFW_KEY_SPACE)
+			currcycle++;
+		if (key == GLFW_KEY_R)
+			currcycle = 0;
+	}
 }
