@@ -196,7 +196,7 @@ STOPPED HERE:
 - still need to make another collapse edge function as requested - TODO - use the algorithm from the lecture to replace the collapse edges algorithm supplied
 */
 
-void BasicScene::updateModelClickCount(bool direction)
+void BasicScene::UpdateModelClickCount(bool direction)
 {
 	if (pickedModel)
 	{
@@ -224,11 +224,11 @@ void BasicScene::KeyCallback(Viewport *_viewport, int x, int y, int key, int sca
 	if (action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
 		if (key == GLFW_KEY_SPACE)
-			updateModelClickCount(true);
+			UpdateModelClickCount(true);
 		if (key == GLFW_KEY_UP)
-			updateModelClickCount(true);
+			UpdateModelClickCount(true);
 		if (key == GLFW_KEY_DOWN)
-			updateModelClickCount(false);
+			UpdateModelClickCount(false);
 		if (key == GLFW_KEY_R)
 		{
 			// reset all click counts

@@ -1,0 +1,56 @@
+Git Repo: https://github.com/tomergaf/EngineForAnimationCourse 
+branch: Assignment1 https://github.com/tomergaf/EngineForAnimationCourse/tree/Assignment1
+
+by: Tomer Gafsou & Alon Zarfati
+
+Changes:
+
+== Files Changed ==
+
+- Added Assignment1 project , loads a local basic scene
+- BasicScene.cpp/.h holds scene definition and logic
+
+===================
+
+** BasicScene **
+
+++ Added ++
+
+- decimationMult : a modifier to control how many edges are decimated
+- clickmap that maps models in scene to mesh id to choose (based on space pressed or arrow keys)
+- updateModelClickCount function that increases or decreases click according to key pressed
+- PreDecimateMesh function to preprocess meshes into containing multiple mesh data objects with different levels of detail
+- custom collaps_edge
++++++++++++
+
+%% Altered &&
+
+-- Init
+- loads and places three AutoMorphingModels in the scene :
+	- a sphere
+	- a cube
+	- igl_fertility object
+- initialized clickMap to 0 for all models in map
+- defines morphing function: choose the mesh id for the picked model by predecimated mesh count modulo of click count for this model
+
+-- PreDecimateMesh 
+- initializes data structures for decimating meshes as described in libigl tutorial 703
+- has a reset lambda resetting thos data structures 
+- has a cut edges function that attempts to cut edges according to decimationMult using a weighted collapse edge function
+- can choose between collapse functions with **ADD LATER**
+- runs a reset and then 10 attempts of cut edges, only successful attempts are added as meshes
+
+-- KeyCallback
+- listens to space presses: if an object is picked, this increases their click count
+- listens to arrow up/down keys: if an object is picked, this increases or decreases their click count
+- listens to r key: this resets all models click count
+- this is not changed but remaains as requested: holding the right mouse button while moving object rotates it
+
+-- UpdateModelClickCount
+- this increases or decreases click count for selected model
+
+-- custom collapse_edge function
+- **ADD LATER**
+&&&&&&&&&&&&&
+****************
+
