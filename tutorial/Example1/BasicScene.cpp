@@ -34,18 +34,18 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     auto cubeMesh{IglLoader::MeshFromFiles("cube_igl","data/cube.off")};
     
     sphere1 = Model::Create( "sphere",sphereMesh, material);
-    cyl = Model::Create( "cyl", cylMesh, material);
+    complex = Model::Create( "cyl", cylMesh, material);
     cube = Model::Create( "cube", cubeMesh, material);
     sphere1->Scale(2);
     sphere1->showWireframe = true;
     sphere1->Translate({-3,0,0});
-    cyl->Translate({3,0,0});
-    cyl->Scale(0.12f);
-    cyl->showWireframe = true;
+    complex->Translate({3,0,0});
+    complex->Scale(0.12f);
+    complex->showWireframe = true;
     cube->showWireframe = true;
     camera->Translate(20, Axis::Z);
     root->AddChild(sphere1);
-    root->AddChild(cyl);
+    root->AddChild(complex);
     root->AddChild(cube);
     
     auto mesh = cube->GetMeshList();
