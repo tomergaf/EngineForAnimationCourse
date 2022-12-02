@@ -255,6 +255,8 @@ void BasicScene::PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh, bool custom)
 		if (!Q.empty())
 		{
 			// collapse edge
+			if(custom)
+				computeQ(); //compute q matrix after each round of collapsing - better result without this for simple shapes
 			const int max_iter = std::ceil(decimationMult * initialSize);
 			for (int j = 0; j < max_iter; j++)
 			{
