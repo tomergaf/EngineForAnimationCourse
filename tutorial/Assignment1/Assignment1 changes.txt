@@ -20,16 +20,18 @@ Changes:
 - clickmap that maps models in scene to mesh id to choose (based on space pressed or arrow keys)
 - updateModelClickCount function that increases or decreases click according to key pressed
 - PreDecimateMesh function to preprocess meshes into containing multiple mesh data objects with different levels of detail
+  pass true for error approximation and false for shortest edge and midpoint
 - custom collaps_edge
 +++++++++++
 
 %% Altered &&
 
 -- Init
-- loads and places three AutoMorphingModels in the scene :
+- loads and places four AutoMorphingModels in the scene :
 	- a sphere
 	- a cube
 	- igl_fertility object
+	- a cow
 - initialized clickMap to 0 for all models in map
 - defines morphing function: choose the mesh id for the picked model by predecimated mesh count modulo of click count for this model
 
@@ -37,8 +39,10 @@ Changes:
 - initializes data structures for decimating meshes as described in libigl tutorial 703
 - has a reset lambda resetting thos data structures 
 - has a cut edges function that attempts to cut edges according to decimationMult using a weighted collapse edge function
-- can choose between collapse functions with **ADD LATER**
+- can choose between collapse functions with boolean flag : true for EA false for SEM
 - runs a reset and then 10 attempts of cut edges, only successful attempts are added as meshes
+- if running reset with true flag, will run computeQ for the algorithm to run properly
+- change deciomationMult to increase or decrease edge count collapsed
 
 -- KeyCallback
 - listens to space presses: if an object is picked, this increases their click count
@@ -49,8 +53,17 @@ Changes:
 -- UpdateModelClickCount
 - this increases or decreases click count for selected model
 
--- custom collapse_edge function
-- **ADD LATER**
+-- custom collapse_edge function consists of:
+- computeQ : Q matrices vector - matrix for each vertex with the algorithm's Q
+- cost calculation - chosen by flag passed from calling function this utilizes the algorithm learned in class
+- edge collapsing is igl's but using our algorithm as a cost function
+
+
+-- DEBUG PRINTS
+- uncomment the lines below "UNCOMMENT TO GET PRINTS" to get prints - this is commented as it slows run time
+- collapses successful so far does not include collateral edges removed (other edges of adjoining faces removed)
+
+
 &&&&&&&&&&&&&
 ****************
 

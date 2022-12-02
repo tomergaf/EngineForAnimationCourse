@@ -14,11 +14,13 @@ public:
     void Update(const cg3d::Program& program, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model) override;
     void KeyCallback(cg3d::Viewport* _viewport, int x, int y, int key, int scancode, int action, int mods) override;
     void UpdateModelClickCount(bool direction);
-    void PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh);
+    void PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh,bool custom);
 
 private:
     std::shared_ptr<Movable> root;
     double decimationMult;
     std::map<cg3d::Model*, int> clickMap;
-    std::shared_ptr<cg3d::Model> cube, complex, sphere1;
+    std::shared_ptr<cg3d::Model> cube, complex, sphere1, cow;
+
+    
 };
