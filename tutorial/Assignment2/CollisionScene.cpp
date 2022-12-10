@@ -38,9 +38,8 @@ using namespace igl;
 
 void CollisionScene::Init(float fov, int width, int height, float near, float far)
 {
-
+	// scene setup
     camera = Camera::Create("camera", fov, float(width) / float(height), near, far);
-	// auto program = std::make_shared<Program>("shaders/phongShader");
 	auto program = std::make_shared<Program>("shaders/phongShader");
 	program->name = "phong";
 	auto cube_program = std::make_shared<Program>("shaders/basicShader1");
@@ -57,43 +56,34 @@ void CollisionScene::Init(float fov, int width, int height, float near, float fa
 	background->SetPickable(false);
 	background->SetStatic();
 
-	// material->AddTexture(0, "textures/box0.bmp", 2);
 	material->AddTexture(0, "textures/bricks.jpg", 2);
 	cube_material->AddTexture(0, "textures/bricks.jpg", 2);
-	// auto sphereMesh{IglLoader::MeshFromFiles("sphere_igl", "data/sphere.obj")};
-	// auto cowMesh{IglLoader::MeshFromFiles("cow", "data/cow.off")};
-	// auto staticBunnyMesh{IglLoader::MeshFromFiles("bunny_static", "data/xcylinder.obj")};
+
 	auto staticBunnyMesh{IglLoader::MeshFromFiles("bunny_static", "data/bunny.off")};
 	auto movingBunnyMesh{IglLoader::MeshFromFiles("bunny_moving", "data/bunny.off")};
-	// auto movingBunnyMesh{IglLoader::MeshFromFiles("bunny_moving", "data/sphere.obj")};
 	auto collisionCube1Mesh {IglLoader::MeshFromFiles("collisioncube1mesh", "data/cube.off")};
 	auto collisionCube2Mesh {IglLoader::MeshFromFiles("collisioncube2mesh", "data/cube.off")};
-
-	// morphing function - cycles through mesh indices by comparing to times pressed space
-	auto morphFunc = [=](Model *model, cg3d::Visitor *visitor)
-	{
-		int cycle = clickMap[model] % model->GetMesh()->data.size(); // curr cycle is number of times space pressed
-		// int cycle = model->GetMesh()->data.size(); // curr cycle is number of times space pressed
-		// modulo is so to get a valid number of mesh to choose -> 13 clicks -> mesh 3
-		debug_print(cycle);
-		return cycle;
-	};
 
 	decimationMult = 0.5; // the modifier to decimate with - change this to increase / decrease edge decimation
 
 	// pre decimate mesh so user can cycle at runtime - change to false to run default decimation
 	bool customPredecimate = false;
 
-    PreDecimateMesh(staticBunnyMesh, customPredecimate);
+    PreDecimateMesh(staticBunnyMesh, customPredecimate); //pre decimation for ease of calculation
 	PreDecimateMesh(movingBunnyMesh, customPredecimate);
 
 	// init vars for collision
-	velocity = 0.004; //set moving velocity
-	objectsCollided=false;
+	velocityX = 0.004; //set moving velocity horizontal
+	velIntervalX = 0.001; //velocity interval for increase/decrease on input button
+	velocityY = 0; //set moving velocity vertical
+	velIntervalY = 0.001;
+	
+	objectsCollided=false; // init collision bool
     
 	// model creation
     staticBunny = Model::Create("staticBunny", staticBunnyMesh, material);
     movingBunny = Model::Create("movingBunny", movingBunnyMesh, material);
+	
 	//collision cube creation
     collisionCube1 = Model::Create("collisioncube1", collisionCube1Mesh, cube_material);
     collisionCube2 = Model::Create("collisioncube2", collisionCube2Mesh, cube_material);
@@ -108,8 +98,8 @@ void CollisionScene::Init(float fov, int width, int height, float near, float fa
 	movingBunny->showWireframe = false;
 	
 	collisionCube1->showFaces = false;
-    collisionCube1->showWireframe = true;
     collisionCube2->showFaces = false;
+    collisionCube1->showWireframe = true;
     collisionCube2->showWireframe = true;
 	
 	staticBunny->Translate({-0.5, 0, 8});
@@ -117,39 +107,25 @@ void CollisionScene::Init(float fov, int width, int height, float near, float fa
 	clickMap.insert({staticBunny.get(), 0}); // load predecimated mesh
 	clickMap.insert({movingBunny.get(), 0}); // load predecimated mesh
 
-
 	root->AddChild(staticBunny);
 	root->AddChild(movingBunny);
-	// root->AddChild(autoStaticBunny);
-	// root->AddChild(autoMovingBunny);
 
-
-	// allign boxes
-	
-	
-
-
+	// allign and draw boxes
 	auto mesh = staticBunny->GetMeshList();
+	igl::AABB<Eigen::MatrixXd, 3> objectTree;
     Ve.push_back(mesh[0]->data[0].vertices); // push vertices of collapsed mesh
     Fa.push_back(mesh[0]->data[0].faces);
-    // V.push_back(mesh[0]->data[mesh[0]->data.size()-1].vertices); // push vertices of collapsed mesh
-    // F.push_back(mesh[0]->data[mesh[0]->data.size()-1].faces);
-    objectTree1.init(Ve[0], Fa[0]);
-	boxTrees.push_back(objectTree1);
+    boxTree1.init(Ve[0], Fa[0]);
+	boxTrees.push_back(boxTree1);
 
-    auto mesh2 = movingBunny->GetMeshList();
-    Ve.push_back(mesh2[0]->data[0].vertices); // // push vertices of collapsed mesh
-    Fa.push_back(mesh2[0]->data[0].faces);
-    // V.push_back(mesh2[0]->data[mesh2[0]->data.size()-1].vertices); // // push vertices of collapsed mesh
-    // F.push_back(mesh2[0]->data[mesh2[0]->data.size()-1].faces);
-    objectTree2.init(Ve[1], Fa[1]);
-	boxTrees.push_back(objectTree2);
+    mesh = movingBunny->GetMeshList();
+    Ve.push_back(mesh[0]->data[0].vertices); // // push vertices of collapsed mesh
+    Fa.push_back(mesh[0]->data[0].faces);
+    boxTree2.init(Ve[1], Fa[1]);
+	boxTrees.push_back(boxTree2);
 
-    DrawBox(objectTree1.m_box,1, collisionCube1); // draw the collision boxes outline
-    DrawBox(objectTree2.m_box,1, collisionCube2);
-
-
-
+    DrawBox(boxTree1.m_box, 1, collisionCube1); // draw the collision boxes outline
+    DrawBox(boxTree2.m_box, 1, collisionCube2);
 }
 
 void CollisionScene::DrawBox(Eigen::AlignedBox<double, 3>& box, int color,std::shared_ptr<cg3d::Model> model){
@@ -176,9 +152,12 @@ void CollisionScene::DrawBox(Eigen::AlignedBox<double, 3>& box, int color,std::s
 	Eigen::MatrixXd V, VN, T;
     Eigen::MatrixXi F;
 
-    V.resize(8, 3);
-    F.resize(12, 3);
-    V.row(0) = BottomLeftFloor;
+    F.resize(12, 3); // 3d cubes have 12 faces 
+    V.resize(8, 3); // and 8 vertices
+    
+	#pragma region cubemap
+	// this maps the cube coords to vertices and faces to vertices
+	V.row(0) = BottomLeftFloor;
     V.row(1) = BottomRightFloor;
     V.row(2) = TopLeftFloor;
     V.row(3) = TopRightFloor;
@@ -199,42 +178,37 @@ void CollisionScene::DrawBox(Eigen::AlignedBox<double, 3>& box, int color,std::s
     F.row(10) = Eigen::Vector3i(4, 5, 1);
     F.row(11) = Eigen::Vector3i(1, 0, 4);
 
+	#pragma endregion
+
     igl::per_vertex_normals(V, F, VN);
     T = Eigen::MatrixXd::Zero(V.rows(), 2);
 
     auto mesh = model->GetMeshList();
-    mesh[0]->data.push_back({ V, F, VN, T });
+    mesh[0]->data.push_back({ V, F, VN, T }); // push new cube mesh to draw
     model->SetMeshList(mesh);
-    model->meshIndex = mesh[0]->data.size()-1;
+    model->meshIndex = mesh[0]->data.size()-1; // use last mesh pushed
 }
 
 bool CollisionScene::ObjectsCollided(igl::AABB<Eigen::MatrixXd, 3>* boxTreeA, igl::AABB<Eigen::MatrixXd, 3>* boxTreeB, std::shared_ptr<cg3d::Model> model, std::shared_ptr<cg3d::Model> otherModel){
-	//base cases
-	if (boxTreeA == nullptr || boxTreeB == nullptr){
-		debug_print("no collision because of null ptr"); // TODO REMOVE THIS
+	if (boxTreeA == nullptr || boxTreeB == nullptr){ // if no boxes at all
 		return false;
 	}
 	
-	if (!BoxesIntersect(boxTreeA->m_box, boxTreeB->m_box, model, otherModel)) {
-		// debug_print("no collision because of no intersect"); // TODO REMOVE THIS
+	if (!BoxesIntersect(boxTreeA->m_box, boxTreeB->m_box, model, otherModel)) { //if boxes of the two models dont intersect
 		return false;
 	}
 	if (boxTreeA->is_leaf() && boxTreeB->is_leaf()) {
-		//if the boxes intersect than draw the  boxes
-		// if (BoxesIntersect(boxTreeA->m_box, boxTreeB->m_box, model, otherModel)) {
-			// std::cout << "collapse" << std::endl;
-			// std::cout << model->name << std::endl;
-			// std::cout << otherModel->name << std::endl;
+		//if the two boxes are leaves and they intersect, draw them
+		if(BoxesIntersect(boxTreeA->m_box, boxTreeB->m_box, model, otherModel)){
 			DrawBox(boxTreeA->m_box, 2, collisionCube1);
 			DrawBox(boxTreeB->m_box,2, collisionCube2);
 			debug_print("collision");
 			objectsCollided = true;
 			return true;
-		// }
-		// else {
-		// 	debug_print("no collision because of else"); // TODO REMOVE THIS
-		// 	return false;
-		// }
+		}
+		else { //else leaves do not intersect
+			return false;
+		}
 
 	}
 	 if (boxTreeA->is_leaf() && !boxTreeB->is_leaf()) {
@@ -246,7 +220,7 @@ bool CollisionScene::ObjectsCollided(igl::AABB<Eigen::MatrixXd, 3>* boxTreeA, ig
 			  ObjectsCollided(boxTreeA->m_left, boxTreeB, model, otherModel);
 	 }
 
-	//recursively check for intersactions case
+	// check recursive conditions
     return ObjectsCollided(boxTreeA->m_left, boxTreeB->m_left, model, otherModel) ||
 		   ObjectsCollided(boxTreeA->m_left, boxTreeB->m_right, model, otherModel) ||
 		   ObjectsCollided(boxTreeA->m_right, boxTreeB->m_left, model, otherModel) ||
@@ -254,6 +228,8 @@ bool CollisionScene::ObjectsCollided(igl::AABB<Eigen::MatrixXd, 3>* boxTreeA, ig
 }
 
 bool CollisionScene::BoxesIntersect(Eigen::AlignedBox<double, 3>& boxA, Eigen::AlignedBox<double, 3>& boxB , std::shared_ptr<cg3d::Model> model, std::shared_ptr<cg3d::Model> otherModel){
+	// check matrices overlap as described in slides
+	
 	// matrix A
 	Eigen::Matrix3d A = model->GetRotation().cast<double>();
 	Eigen::Vector3d A0 = A.col(0);
@@ -265,34 +241,42 @@ bool CollisionScene::BoxesIntersect(Eigen::AlignedBox<double, 3>& boxA, Eigen::A
 	Eigen::Vector3d B0 = B.col(0);
 	Eigen::Vector3d B1 = B.col(1);
 	Eigen::Vector3d B2 = B.col(2);
-	//C=A^T*B
+	
+	// C=A^T*B
 	Eigen::Matrix3d C = A.transpose() * B;
-	//get the lengths of the sides of the bounding box
+	
+	// aabb edge length is size/2
 	Eigen::Vector3d a = boxA.sizes();
 	Eigen::Vector3d b = boxB.sizes();
 	a = a / 2;
 	b = b / 2;
-	//build matrix D
+	// matrix D
 	Eigen::Vector4d CenterA = Eigen::Vector4d(boxA.center()[0], boxA.center()[1], boxA.center()[2], 1);
 	Eigen::Vector4d CenterB = Eigen::Vector4d(boxB.center()[0], boxB.center()[1], boxB.center()[2], 1);
 	Eigen::Vector4d D4d = otherModel->GetTransform().cast<double>() * CenterB - model->GetTransform().cast<double>() * CenterA;
 	Eigen::Vector3d D = D4d.head(3);
-	//check the 15 conditions
-	//check A conditions
-	if (a(0) + (b(0) * abs(C.row(0)(0)) + b(1) * abs(C.row(0)(1)) + b(2) * abs(C.row(0)(2))) < abs(A0.transpose() * D))
+	
+	// A conditions
+	// if (a(0) + (b(0) * abs(C.row(0)(0)) + b(1) * abs(C.row(0)(1)) + b(2) * abs(C.row(0)(2))) < abs(A0.transpose() * D))
+	if (a(0) + b.dot(C.row(0)) < abs(A0.transpose() * D))
 		return false;
-	if (a(1) + (b(0) * abs(C.row(1)(0)) + b(1) * abs(C.row(1)(1)) + b(2) * abs(C.row(1)(2))) < abs(A1.transpose() * D))
+	// if (a(1) + (b(0) * abs(C.row(1)(0)) + b(1) * abs(C.row(1)(1)) + b(2) * abs(C.row(1)(2))) < abs(A1.transpose() * D))
+	if (a(1) + b.dot(C.row(1)) < abs(A1.transpose() * D))
 		return false;
-	if (a(2) + (b(0) * abs(C.row(2)(0)) + b(1) * abs(C.row(2)(1)) + b(2) * abs(C.row(2)(2))) < abs(A2.transpose() * D))
+	// if (a(2) + (b(0) * abs(C.row(2)(0)) + b(1) * abs(C.row(2)(1)) + b(2) * abs(C.row(2)(2))) < abs(A2.transpose() * D))
+	if (a(2) + b.dot(C.row(2)) < abs(A2.transpose() * D))
 		return false;
-	//check B conditions
-	if (b(0) + (a(0) * abs(C.row(0)(0)) + a(1) * abs(C.row(1)(0)) + a(2) * abs(C.row(2)(0))) < abs(B0.transpose() * D))
+	// B conditions
+	// if (b(0) + (a(0) * abs(C.row(0)(0)) + a(1) * abs(C.row(1)(0)) + a(2) * abs(C.row(2)(0))) < abs(B0.transpose() * D))
+	if (b(0) + a.dot(C.row(0)) < abs(B0.transpose() * D))
 		return false;
-	if (b(1) + (a(0) * abs(C.row(0)(1)) + a(1) * abs(C.row(1)(1)) + a(2) * abs(C.row(2)(1))) < abs(B1.transpose() * D))
+	// if (b(1) + (a(0) * abs(C.row(0)(1)) + a(1) * abs(C.row(1)(1)) + a(2) * abs(C.row(2)(1))) < abs(B1.transpose() * D))
+	if (b(1) + a.dot(C.row(1)) < abs(B1.transpose() * D))
 		return false;
-	if (b(2) + (a(0) * abs(C.row(0)(2)) + a(1) * abs(C.row(1)(2)) + a(2) * abs(C.row(2)(2))) < abs(B2.transpose() * D))
+	// if (b(2) + (a(0) * abs(C.row(0)(2)) + a(1) * abs(C.row(1)(2)) + a(2) * abs(C.row(2)(2))) < abs(B2.transpose() * D))
+	if (b(2) + a.dot(C.row(2)) < abs(B2.transpose() * D))
 		return false;
-	//check A0 
+	// A0 conditions
 	double R = C.row(1)(0) * A2.transpose() * D;
 	R-=C.row(2)(0) * A1.transpose() * D;
 	if (a(1) * abs(C.row(2)(0)) + a(2) * abs(C.row(1)(0)) + b(1) * abs(C.row(0)(2))+ b(2) * abs(C.row(0)(1)) < abs(R))
@@ -307,9 +291,9 @@ bool CollisionScene::BoxesIntersect(Eigen::AlignedBox<double, 3>& boxA, Eigen::A
 	R -= C.row(2)(2) * A1.transpose() * D;
 	if (a(1) * abs(C.row(2)(2)) + a(2) * abs(C.row(1)(2)) + b(0) * abs(C.row(0)(1)) + b(1) * abs(C.row(0)(0)) < abs(R))
 		return false;
-	//check A1 conditions
+	// A1 conditions
 
-	 R = C.row(2)(0) * A0.transpose() * D;
+	R = C.row(2)(0) * A0.transpose() * D;
 	R -= C.row(0)(0) * A2.transpose() * D;
 	if (a(0) * abs(C.row(2)(0)) + a(2) * abs(C.row(0)(0)) + b(1) * abs(C.row(1)(2)) + b(2) * abs(C.row(1)(1)) < abs(R))
 		return false;
@@ -323,9 +307,9 @@ bool CollisionScene::BoxesIntersect(Eigen::AlignedBox<double, 3>& boxA, Eigen::A
 	R -= C.row(0)(2) * A2.transpose() * D;
 	if (a(0) * abs(C.row(2)(2)) + a(2) * abs(C.row(0)(2)) + b(0) * abs(C.row(1)(1)) + b(1) * abs(C.row(1)(0)) < abs(R))
 		return false;
-	//check A2 conditions
+	// A2 conditions
 
-	 R = C.row(0)(0) * A1.transpose() * D;
+	R = C.row(0)(0) * A1.transpose() * D;
 	R -= C.row(1)(0) * A0.transpose() * D;
 	if (a(0) * abs(C.row(1)(0)) + a(1) * abs(C.row(0)(0)) + b(1) * abs(C.row(2)(2)) + b(2) * abs(C.row(2)(1)) < abs(R))
 		return false;
@@ -343,10 +327,9 @@ bool CollisionScene::BoxesIntersect(Eigen::AlignedBox<double, 3>& boxA, Eigen::A
 
 }
 
-
 void CollisionScene::AnimateUntilCollision(std::shared_ptr<cg3d::Model> model, float velocity){
 	if(!objectsCollided){
-		Eigen::Vector3f moveVector = {-1*velocity,0,0};
+		Eigen::Vector3f moveVector = {-1*velocityX,1*velocityY,0};
 		model->Translate(moveVector);
 	}
 	
@@ -553,21 +536,19 @@ void CollisionScene::PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh, bool cust
 	}
 }
 
-void CollisionScene::UpdateModelClickCount(bool direction)
-{
-	if (pickedModel)
-	{
-		if (clickMap.find(pickedModel.get()) != clickMap.end())
-		{
-			if (direction)
-				clickMap[pickedModel.get()] += 1;
-			else
-			{
-				if (clickMap[pickedModel.get()] >= 1)
-					clickMap[pickedModel.get()] -= 1;
-			}
-		}
-	}
+void CollisionScene::UpdateXVelocity(bool direction){ //function for changing velocity on button click
+
+	float change = direction ? velIntervalX*1 : velIntervalX*-1;
+	velocityX += change;
+}
+
+void CollisionScene::UpdateYVelocity(bool direction){
+	float change = direction ? velIntervalY*1 : velIntervalY*-1;
+	velocityY += change;
+}
+
+void CollisionScene::StopMotion(){
+	velocityX = velocityY = 0;
 }
 
 void CollisionScene::Update(const Program &program, const Eigen::Matrix4f &proj, const Eigen::Matrix4f &view, const Eigen::Matrix4f &model)
@@ -588,30 +569,26 @@ void CollisionScene::Update(const Program &program, const Eigen::Matrix4f &proj,
 
 	// ObjectsCollided(&boxTrees[0],&boxTrees[1], staticBunny, movingBunny);
 	if (!objectsCollided){
-		ObjectsCollided(&objectTree1, &objectTree2, staticBunny, movingBunny);
-		AnimateUntilCollision(movingBunny, velocity);
+		ObjectsCollided(&boxTree1, &boxTree2, staticBunny, movingBunny);
+		// ObjectsCollided(&boxTrees[0], &boxTrees[1], staticBunny, movingBunny);
+		AnimateUntilCollision(movingBunny, velocityX);
 	}
 }
 
 void CollisionScene::KeyCallback(Viewport *_viewport, int x, int y, int key, int scancode, int action, int mods)
 {
-	// TODO make this aware of picked object
+	
 	if (action == GLFW_PRESS || action == GLFW_REPEAT)
 	{
 		if (key == GLFW_KEY_SPACE)
-			UpdateModelClickCount(true);
-		if (key == GLFW_KEY_UP) //TODO change this to velocityup
-			UpdateModelClickCount(true);
-		if (key == GLFW_KEY_DOWN) //TODO change this to velocitydown
-			UpdateModelClickCount(false);
-		if (key == GLFW_KEY_R)
-		{
-			// Init();
-			// reset all click counts
-			for (auto &key : clickMap)
-			{
-				key.second = 0;
-			}
-		}
+			StopMotion();
+		if (key == GLFW_KEY_UP) 
+			UpdateYVelocity(true);
+		if (key == GLFW_KEY_DOWN) 
+			UpdateYVelocity(false);
+		if (key == GLFW_KEY_LEFT) 
+			UpdateXVelocity(true);
+		if (key == GLFW_KEY_RIGHT) 
+			UpdateXVelocity(false);
 	}
 }
