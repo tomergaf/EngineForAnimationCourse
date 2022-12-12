@@ -13,9 +13,11 @@ Changes:
 -CollisionScene:
 
 Built upon BasicScene1 from the first assingment. Now Supports Dynamic Collision Detection using OBB.
-The Scene will showcase mesh's of bunnies colliding into eachother (one is moving and one is held in place)
+The Scene will showcase meshes of bunnies colliding into eachother (one is moving and one is held in place)
 and will reveal the smallest bounding
 boxes which were involved.
+
+Note: PreDecimateMesh is used to simplify the meshes in order to calculate the collision more efficiantly 
 
 ColisionScene contains 2 integral function:
 
@@ -31,10 +33,10 @@ ColisionScene contains 2 integral function:
 =============================
 Other added functions:
 
-%AnimateUntilCollision  - helper function that is used to determen the movement of the by using velocityX and velocityY
+%AnimateUntilCollision  - helper function that is used to determen the movement by using velocityX and velocityY
 %StopMotion - velocityX, velocityY = 0
-%UpdateYVelocity - uses a boolean parameter to determin the change of movement on thw Y axis
-%UpdateXVelocity - uses a boolean parameter to determin the change of movement on thw X axis
+%UpdateYVelocity - uses a boolean parameter to determen the change of movement on thw Y axis
+%UpdateXVelocity - uses a boolean parameter to determen the change of movement on thw X axis
 
 ==========
 - Changed KeyCallback, now binding space up down left right to methods which change the velocity of the moving rabbit
