@@ -1,0 +1,41 @@
+Git Repo: https://github.com/tomergaf/EngineForAnimationCourse 
+Assignment branch:  https://github.com/tomergaf/EngineForAnimationCourse/tree/Tomer/tutorial/Assignment2
+
+by: Tomer Gafsou & Alon Zarfati
+
+Changes:
+
+%Assignment2 Project Added
+
+%CollisionScene .h/.cpp hold defenition and logic respectively
+
+
+-CollisionScene:
+
+Built upon BasicScene1 from the first assingment. Now Supports Dynamic Collision Detection using OBB.
+The Scene will showcase mesh's of bunnies colliding into eachother (one is moving and one is held in place)
+and will reveal the smallest bounding
+boxes which were involved.
+
+ColisionScene contains 2 integral function:
+
+1.ObjectsCollided - gets the 2 meshes checked for collision and their OBB tree.
+  This is a recursive function propegates inside the trees and return true if 2 leafs 
+  from the different trees colide, else false.
+
+2.BoxesIntersect - gets as input 2 OBB boxes and 2 meshes. the function is responsible to determen
+  if there was an intersection between the OBBs.
+  If a separating axis is found (among the potential 15), the remaining ones will not be checked.
+  The if statments correspond to the table as shown in the papers.
+  
+=============================
+Other added functions:
+
+%AnimateUntilCollision  - helper function that is used to determen the movement of the by using velocityX and velocityY
+%StopMotion - velocityX, velocityY = 0
+%UpdateYVelocity - uses a boolean parameter to determin the change of movement on thw Y axis
+%UpdateXVelocity - uses a boolean parameter to determin the change of movement on thw X axis
+
+==========
+- Changed KeyCallback, now binding space up down left right to methods which change the velocity of the moving rabbit
+	on the X and Y axis.
