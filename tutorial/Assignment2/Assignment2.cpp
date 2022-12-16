@@ -15,7 +15,7 @@ int main()
     const int DISPLAY_WIDTH = 1000;
     const int DISPLAY_HEIGHT = 1000;
     const float CAMERA_ANGLE = 45.0f;
-    const float NEAR = 0.1f;
+    const float NEAR = 0.001f;
     const float FAR = 120.0f;
 
     Renderer renderer;

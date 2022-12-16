@@ -23,7 +23,7 @@ ColisionScene contains 2 integral function:
   This is a recursive function propegates inside the trees and return true if 2 leafs 
   from the different trees colide, else false.
 
-2.BoxesIntersect - gets as input 2 OBB boxes and 2 meshes. the function is responsible to determen
+2.BoxesIntersect - gets as input 2 OBB boxes and 2 meshes. the function is responsible to determine
   if there was an intersection between the OBBs.
   If a separating axis is found (among the potential 15), the remaining ones will not be checked.
   The if statments correspond to the table as shown in the papers.
@@ -31,10 +31,10 @@ ColisionScene contains 2 integral function:
 =============================
 Other added functions:
 
-%AnimateUntilCollision  - helper function that is used to determen the movement of the by using velocityX and velocityY
+%AnimateUntilCollision  - helper function that is used to determine the movement of the by using velocityX and velocityY
 %StopMotion - velocityX, velocityY = 0
-%UpdateYVelocity - uses a boolean parameter to determin the change of movement on thw Y axis
-%UpdateXVelocity - uses a boolean parameter to determin the change of movement on thw X axis
+%UpdateYVelocity - uses a boolean parameter to determine the change of movement on thw Y axis
+%UpdateXVelocity - uses a boolean parameter to determine the change of movement on thw X axis
 
 ==========
 - Changed KeyCallback, now binding space up down left right to methods which change the velocity of the moving rabbit
