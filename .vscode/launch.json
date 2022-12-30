@@ -27,7 +27,40 @@
         },
         
         {
-            "name": "(Windows) Launch",
+            "name": "(Windows) Launch Assignment2",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}//build/Debug/Assignment2_bin.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "(Windows) Launch Assignment3",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}//build/Debug/Assignment3_bin.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "(Windows) Launch Assignment1",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}//build/Debug/Assignment1_bin.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "(Windows) Launch Project",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}//build/Debug/Assignment2_bin.exe",

@@ -30,6 +30,8 @@ private:
     double decimationMult;
     float velocityX, velocityY , velIntervalX, velIntervalY;
     bool objectsCollided;
+    float i_fov, i_near, i_far;
+    int i_width, i_height;
     std::map<cg3d::Model*, int> clickMap;
     igl::AABB<Eigen::MatrixXd, 3> boxTree1, boxTree2;
     std::shared_ptr<cg3d::Model> staticBunny, movingBunny;

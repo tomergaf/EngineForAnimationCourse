@@ -39,6 +39,11 @@ using namespace igl;
 void CollisionScene::Init(float fov, int width, int height, float near, float far)
 {
 	// scene setup
+	i_fov = fov;
+	i_width = width;
+	i_height = height;
+	i_near = near;
+	i_far = far;
     camera = Camera::Create("camera", fov, float(width) / float(height), near, far);
 	auto program = std::make_shared<Program>("shaders/phongShader");
 	program->name = "phong";
@@ -73,7 +78,7 @@ void CollisionScene::Init(float fov, int width, int height, float near, float fa
 	PreDecimateMesh(movingBunnyMesh, customPredecimate);
 
 	// init vars for collision
-	velocityX = 0.004; //set moving velocity horizontal
+	velocityX = 0.0004; //set moving velocity horizontal
 	velIntervalX = 0.001; //velocity interval for increase/decrease on input button
 	velocityY = 0; //set moving velocity vertical
 	velIntervalY = 0.001;
@@ -257,24 +262,24 @@ bool CollisionScene::BoxesIntersect(Eigen::AlignedBox<double, 3>& boxA, Eigen::A
 	Eigen::Vector3d D = D4d.head(3);
 	
 	// A conditions
-	// if (a(0) + (b(0) * abs(C.row(0)(0)) + b(1) * abs(C.row(0)(1)) + b(2) * abs(C.row(0)(2))) < abs(A0.transpose() * D))
-	if (a(0) + b.dot(C.row(0)) < abs(A0.transpose() * D))
+	if (a(0) + (b(0) * abs(C.row(0)(0)) + b(1) * abs(C.row(0)(1)) + b(2) * abs(C.row(0)(2))) < abs(A0.transpose() * D))
+	// if (a(0) + b.dot(C.row(0)) < abs(A0.transpose() * D))
 		return false;
-	// if (a(1) + (b(0) * abs(C.row(1)(0)) + b(1) * abs(C.row(1)(1)) + b(2) * abs(C.row(1)(2))) < abs(A1.transpose() * D))
-	if (a(1) + b.dot(C.row(1)) < abs(A1.transpose() * D))
+	if (a(1) + (b(0) * abs(C.row(1)(0)) + b(1) * abs(C.row(1)(1)) + b(2) * abs(C.row(1)(2))) < abs(A1.transpose() * D))
+	// if (a(1) + b.dot(C.row(1)) < abs(A1.transpose() * D))
 		return false;
-	// if (a(2) + (b(0) * abs(C.row(2)(0)) + b(1) * abs(C.row(2)(1)) + b(2) * abs(C.row(2)(2))) < abs(A2.transpose() * D))
-	if (a(2) + b.dot(C.row(2)) < abs(A2.transpose() * D))
+	if (a(2) + (b(0) * abs(C.row(2)(0)) + b(1) * abs(C.row(2)(1)) + b(2) * abs(C.row(2)(2))) < abs(A2.transpose() * D))
+	// if (a(2) + b.dot(C.row(2)) < abs(A2.transpose() * D))
 		return false;
 	// B conditions
-	// if (b(0) + (a(0) * abs(C.row(0)(0)) + a(1) * abs(C.row(1)(0)) + a(2) * abs(C.row(2)(0))) < abs(B0.transpose() * D))
-	if (b(0) + a.dot(C.row(0)) < abs(B0.transpose() * D))
+	if (b(0) + (a(0) * abs(C.row(0)(0)) + a(1) * abs(C.row(1)(0)) + a(2) * abs(C.row(2)(0))) < abs(B0.transpose() * D))
+	// if (b(0) + a.dot(C.row(0)) < abs(B0.transpose() * D))
 		return false;
-	// if (b(1) + (a(0) * abs(C.row(0)(1)) + a(1) * abs(C.row(1)(1)) + a(2) * abs(C.row(2)(1))) < abs(B1.transpose() * D))
-	if (b(1) + a.dot(C.row(1)) < abs(B1.transpose() * D))
+	if (b(1) + (a(0) * abs(C.row(0)(1)) + a(1) * abs(C.row(1)(1)) + a(2) * abs(C.row(2)(1))) < abs(B1.transpose() * D))
+	// if (b(1) + a.dot(C.row(1)) < abs(B1.transpose() * D))
 		return false;
-	// if (b(2) + (a(0) * abs(C.row(0)(2)) + a(1) * abs(C.row(1)(2)) + a(2) * abs(C.row(2)(2))) < abs(B2.transpose() * D))
-	if (b(2) + a.dot(C.row(2)) < abs(B2.transpose() * D))
+	if (b(2) + (a(0) * abs(C.row(0)(2)) + a(1) * abs(C.row(1)(2)) + a(2) * abs(C.row(2)(2))) < abs(B2.transpose() * D))
+	// if (b(2) + a.dot(C.row(2)) < abs(B2.transpose() * D))
 		return false;
 	// A0 conditions
 	double R = C.row(1)(0) * A2.transpose() * D;
@@ -590,5 +595,7 @@ void CollisionScene::KeyCallback(Viewport *_viewport, int x, int y, int key, int
 			UpdateXVelocity(true);
 		if (key == GLFW_KEY_RIGHT) 
 			UpdateXVelocity(false);
+		if (key == GLFW_KEY_R) 
+			Init(i_fov, i_width, i_height, i_near, i_far);
 	}
 }
