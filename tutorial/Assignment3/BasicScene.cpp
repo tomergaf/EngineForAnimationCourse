@@ -78,17 +78,31 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     float scaleFactor = 1; 
     cyls.push_back( Model::Create("cyl",cylMesh, material));
     cyls[0]->Scale(scaleFactor,Axis::X);
+    // cyls[0]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
     cyls[0]->SetCenter(Eigen::Vector3f(-0.8f*scaleFactor,0,0));
+    // cyls[0]->RotateByDegree(90, Eigen::Vector3f(0,1,0));
     root->AddChild(cyls[0]);
    
     for(int i = 1;i < 3; i++)
     { 
+        //cyls
         cyls.push_back( Model::Create("cyl", cylMesh, material));
         cyls[i]->Scale(scaleFactor,Axis::X);   
+        // cyls[i]->Translate(1.6f*scaleFactor,Axis::Z);
         cyls[i]->Translate(1.6f*scaleFactor,Axis::X);
         cyls[i]->SetCenter(Eigen::Vector3f(-0.8f*scaleFactor,0,0));
+        // cyls[i]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
         cyls[i-1]->AddChild(cyls[i]);
+         
+        //axis drawing
+        axis.push_back(Model::Create("axis", coordsys, material1));
+        axis[i]->mode = 1;
+        axis[i]->Scale(4, Axis::XYZ);
+        cyls[i-1]->AddChild(axis[i]);
+        axis[i]->Translate(0.8f* scaleFactor,Axis::X);
+        // axis[i]->Translate(0.8f* scaleFactor,Axis::Z);
     }
+    // cyls[0]->Translate({0,0,0.8f*scaleFactor});
     cyls[0]->Translate({0.8f*scaleFactor,0,0});
 
     auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
@@ -141,14 +155,16 @@ void BasicScene::ikCyclicCoordinateDecentMethod(std::shared_ptr<AutoMorphingMode
     //TODO - make sure this works
     //TODO - validate magics - angles and such
     //TODO - remove wrapping if
-    
+    //TODO - delete init rotation if it does not help
+    //TODO - Remove debugs
+    //TODO - implement ALL callback and constraints in the document (ie arm doesnt brake when moving or rotating)
+
     if (shouldAnimateCCD) {
-		// Eigen::Vector3d target_des = target->GetAggregatedTransform().col(3).head(3);
-		Eigen::Vector3f target_des = target->GetTransform().block<3,1>(0,3);
-        debug_print("target is at: ");
-        debug_print(target_des);
-		Eigen::Vector3f first_link_pos = ikGetPosition(0, 0);
-		if ((target_des - first_link_pos).norm() > CYL_LENGTH * 3) {
+		Eigen::Vector3f targetDes = target->GetAggregatedTransform().block<3,1>(0,3); //get cube source
+        // debug_print("target is at: ");
+        // debug_print(targetDes);
+		Eigen::Vector3f first_link_pos = ikCylPosition(0, 0); //get first link base
+		if ((targetDes - first_link_pos).norm() > CYL_LENGTH * 3) { //if distance of first link base and cube is greater than all links , fail
 			std::cout << "cannot reach" << std::endl;
 			shouldAnimateCCD = false;
 			return;
@@ -156,45 +172,34 @@ void BasicScene::ikCyclicCoordinateDecentMethod(std::shared_ptr<AutoMorphingMode
         int currIndex = lastLinkIndex;
 		while (currIndex != -1) {
             std::shared_ptr<Model> currLink = cyls[currIndex];
-			// Eigen::Vector3f r = ikGetPosition(currLink, 0);
-			Eigen::Vector3f r = ikGetPosition(currIndex, 0);
-			// Eigen::Vector3f e = ikGetPosition(cyls[lastLinkIndex], CYL_LENGTH);
-			Eigen::Vector3f e = ikGetPosition(lastLinkIndex, CYL_LENGTH);
-			Eigen::Vector3f rd = target_des - r;
+			Eigen::Vector3f r = ikCylPosition(currIndex, 0);
+			Eigen::Vector3f e = ikCylPosition(lastLinkIndex, CYL_LENGTH);
+			Eigen::Vector3f rd = targetDes - r;
 			Eigen::Vector3f re = e - r;
-			Eigen::Vector3f normal = re.normalized().cross(rd.normalized());//returns the plane normal
-			float distance = (target_des - e).norm();
+			Eigen::Vector3f normal = re.normalized().cross(rd.normalized());//calculates plane normal
+			float distance = (targetDes - e).norm();
 			if (distance < 0.05) {
 				std::cout << "done, distance: " << distance << std::endl;
-				initRotation();
+				//initRotation(); 
 				shouldAnimateCCD = false;
 				return;
 			}
 			float dot = rd.normalized().dot(re.normalized());
-			//check that it is beetween -1 to 1
+			// check dot prioduct is valid range - joints
 			if (dot > 1)
 				dot = 1;
 			if (dot < -1)
 				dot = -1;
 			float angle = acosf(dot) / 50;
-            Eigen::Matrix4f parentdir =  currIndex > 0 ? cyls[currIndex-1]->GetTransform() : Eigen::Matrix4f::Identity();
-			// Eigen::Vector3f rotationVec = (cyls[parentIndex]->GetTransform() - currLink->GetTransform())* normal;
-			// Eigen::Vector3f rotationVec = (cyls[parentIndex]->GetTransform() * currLink->GetTransform()).block<3, 3>(0, 0).inverse() * normal;
-			// Eigen::Vector3f rotationVec = (cyls[parentIndex]->GetTransform() * currLink->GetTransform()).block<3, 3>(0, 0).inverse() * normal;
-			// Eigen::Vector3f rotationVec = (parentdir * currLink->GetAggregatedTransform()).block<3, 3>(0, 0).inverse() * normal;
-			Eigen::Vector3f rotationVec = (currLink->GetTransform()).block<3, 3>(0, 0).inverse() * normal;
-			// Eigen::Vector3f rotationVec = Eigen::Vector3f(0,1,1);
-			if (currIndex!=0) {
-                
+			Eigen::Vector3f rotationVec = (currLink->GetAggregatedTransform()).block<3, 3>(0, 0).inverse() * normal; //ratate towards link position
+			if (currIndex!=0) { //
 				currLink->Rotate(angle, rotationVec);
-				// e = ikGetPosition(cyls[lastLinkIndex], CYL_LENGTH); //get new position after rotation
-				e = ikGetPosition(lastLinkIndex, CYL_LENGTH); //get new position after rotation
+				e = ikCylPosition(lastLinkIndex, CYL_LENGTH); //get new position after rotation
 				re = e - r;
-				// Eigen::Vector3f r_parent = ikGetPosition(cyls[currIndex-1], 0);
-				Eigen::Vector3f r_parent = ikGetPosition(currIndex-1, 0);
-				rd = r_parent - r;
+				Eigen::Vector3f rParent = ikCylPosition(currIndex-1, 0);
+				rd = rParent - r;
 				//find angle between parent and link
-				double constraint = 0.5235987756;
+				double constraint = 0.5236;
 				double parentDot = rd.normalized().dot(re.normalized());//get dot 
 				if (parentDot > 1)
 					parentDot = 1;
@@ -203,7 +208,7 @@ void BasicScene::ikCyclicCoordinateDecentMethod(std::shared_ptr<AutoMorphingMode
 				double parentAngle = acos(parentDot);
 				currLink->Rotate(-angle, rotationVec);//rotate back 
 				if (parentAngle < constraint) {//fix angle
-					angle = angle - (constraint - parentAngle);
+					angle = angle-(constraint - parentAngle);
 				}
 
 			}
@@ -215,27 +220,22 @@ void BasicScene::ikCyclicCoordinateDecentMethod(std::shared_ptr<AutoMorphingMode
 }
 
 
-// Eigen::Vector3f BasicScene::ikGetPosition(std::shared_ptr<Model> target, double length){
-Eigen::Vector3f BasicScene::ikGetPosition(int target, double length){
-	// Eigen::Vector3d CrotationCurr = target->GetRotation();
-	// Eigen::Vector3f CrotationCurr = target->GetTranslation();
-	// Eigen::Vector3f CrotationCurr = cyls[target]->GetTranslation();
-	// Eigen::Vector3f CrotationCurr = cyls[target]->GetRotation()
-	// Eigen::Vector4f rCenter(CrotationCurr[0], CrotationCurr[1], CrotationCurr[2] + length, 1);
-    int parentIndex = target > 0 ? target-1 : 0;
-    Eigen::Matrix4f parentdir =  target > 0 ? cyls[target-1]->GetTransform() : Eigen::Matrix4f::Identity();
-	// Eigen::Vector3f r = (parentdir * cyls[target]->GetTransform() * rCenter).head<3>();
-	// Eigen::Vector3f r = (parentdir * cyls[target]->GetTransform()).block<3,1>(0,3);
-	// Eigen::Vector3f r = (cyls[target]->GetAggregatedTransform() * Eigen::Matrix4f::Identity()*length).block<3,1>(0,3);
-	Eigen::Vector3f r = (cyls[target]->GetAggregatedTransform() * parentdir*length ).block<3,1>(0,3);
-    r = Eigen::Vector3f(r[0],r[1],r[2]);
-	// Eigen::Vector3f r = Eigen::Vector3f(1,1,1);
+Eigen::Vector3f BasicScene::ikCylPosition(int target, double length){
+    // this returns the cylinder position for ik - depending on length value - returns tip or base of it
+    
+    Eigen::Matrix4f linkTransform = cyls[target]->GetAggregatedTransform();
+	Eigen::Vector3f linkCenter = Eigen::Vector3f(linkTransform.col(3).x(), linkTransform.col(3).y(), linkTransform.col(3).z());
+    Eigen::Vector3f r;
+	if(length>0) //get tip
+        r = linkCenter + cyls[target]->GetRotation() *Eigen::Vector3f(CYL_LENGTH/2,0,0);
+    else //get base
+        r = linkCenter - cyls[target]->GetRotation() *Eigen::Vector3f(CYL_LENGTH/2,0 ,0);
 	return r;
 } 
 
 
 void BasicScene::initRotation(){
-	
+	// not sure this is needed yet
 	int currLink = lastLinkIndex;
 	while (currLink != cyls.size()) {
         Eigen::Matrix3f Z = cyls[currLink]->GetRotation();
@@ -314,9 +314,12 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
         auto moveCoeff = camera->CalcMoveCoeff(pickedModelDepth, viewport->width);
         auto angleCoeff = camera->CalcAngleCoeff(viewport->width);
         if (pickedModel) {
-            //pickedModel->SetTout(pickedToutAtPress);
-            if (buttonState[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_RELEASE)
-                pickedModel->TranslateInSystem(system, {-float(xAtPress - x) / moveCoeff, float(yAtPress - y) / moveCoeff, 0});
+            if (buttonState[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_RELEASE){
+                std::shared_ptr<cg3d::Model> currModel = pickedModel;
+                if(std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end()) // if picked object is a cylinder pick base - avoid arm breaking
+                    currModel = cyls[0];
+                currModel->TranslateInSystem(system, {-float(xAtPress - x) / moveCoeff, float(yAtPress - y) / moveCoeff, 0});
+            }
             if (buttonState[GLFW_MOUSE_BUTTON_MIDDLE] != GLFW_RELEASE)
                 pickedModel->RotateInSystem(system, float(xAtPress - x) / angleCoeff, Axis::Z);
             if (buttonState[GLFW_MOUSE_BUTTON_LEFT] != GLFW_RELEASE) {
@@ -324,7 +327,6 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
                 pickedModel->RotateInSystem(system, float(yAtPress - y) / angleCoeff, Axis::X);
             }
         } else {
-           // camera->SetTout(cameraToutAtPress);
             if (buttonState[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_RELEASE)
                 root->TranslateInSystem(system, {-float(xAtPress - x) / moveCoeff/10.0f, float( yAtPress - y) / moveCoeff/10.0f, 0});
             if (buttonState[GLFW_MOUSE_BUTTON_MIDDLE] != GLFW_RELEASE)
