@@ -19,7 +19,7 @@ public:
     void KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, int scancode, int action, int mods) override;
     void ikCyclicCoordinateDecentMethod(std::shared_ptr<cg3d::AutoMorphingModel> target);
     // Eigen::Vector3f ikGetPosition(std::shared_ptr<cg3d::Model> target, double length);
-    Eigen::Vector3f ikGetPosition(int target, double length);
+    Eigen::Vector3f ikCylPosition(int target, double length);
     Eigen::Vector3f GetSpherePos();
     void initRotation();
 private:
