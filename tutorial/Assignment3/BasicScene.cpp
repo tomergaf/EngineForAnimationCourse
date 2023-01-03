@@ -29,14 +29,14 @@
 #include "igl/write_triangle_mesh.h"
 
 #include "Utility.h"
-
+#define M_PI       3.14159265358979323846 
 // #include "AutoMorphingModel.h"
 
 using namespace cg3d;
 
 void BasicScene::Init(float fov, int width, int height, float near, float far)
 {
-    shouldAnimateCCD=false;
+    shouldAnimateCCD=true;
     camera = Camera::Create( "camera", fov, float(width) / height, near, far);
     AddChild(root = Movable::Create("root")); // a common (invisible) parent object for all the shapes
     auto daylight{std::make_shared<Material>("daylight", "shaders/cubemapShader")}; 
@@ -372,14 +372,29 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
             case GLFW_KEY_A:
                 camera->TranslateInSystem(system, {-0.1f, 0, 0});
                 break;
-            case GLFW_KEY_D:
-                camera->TranslateInSystem(system, {0.1f, 0, 0});
-                break;
+           // case GLFW_KEY_D:
+             //   camera->TranslateInSystem(system, {0.1f, 0, 0});
+               // break;
             case GLFW_KEY_B:
                 camera->TranslateInSystem(system, {0, 0, 0.1f});
                 break;
             case GLFW_KEY_F:
                 camera->TranslateInSystem(system, {0, 0, -0.1f});
+                break;
+            case GLFW_KEY_D: {
+
+                Eigen::Vector3f targetDes = autoCube->GetAggregatedTransform().block<3, 1>(0, 3);
+                std::cout << "target = (x: " << targetDes.x() << " y: " << targetDes.y() << " z: " << targetDes.z() << ")" << std::endl;; }
+                break;
+            case 80:
+                if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end())
+                {
+                    auto rotation = pickedModel->GetRotation();
+                    Eigen::Vector3f euler_angles = rotation.eulerAngles(2, 0, 2);
+                    std::cout << "Phi: " << euler_angles[0] * 180.0f / M_PI << " degrees" << std::endl;
+                    std::cout << "Theta: " << euler_angles[1] * 180.0f / M_PI << " degrees" << std::endl;
+                    std::cout << "Psi: " << euler_angles[2] * 180.0f / M_PI << " degrees" << std::endl;
+                }
                 break;
             case GLFW_KEY_1:
                 if( pickedIndex > 0)
@@ -409,6 +424,9 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 break;
             case GLFW_KEY_SPACE:
                 shouldAnimateCCD = ! shouldAnimateCCD;
+
+                //todo
+
         }
     }
 }
