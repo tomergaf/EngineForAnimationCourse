@@ -36,7 +36,7 @@ using namespace cg3d;
 
 void BasicScene::Init(float fov, int width, int height, float near, float far)
 {
-    shouldAnimateCCD=true;
+    shouldAnimateCCD = false;
     camera = Camera::Create( "camera", fov, float(width) / height, near, far);
     AddChild(root = Movable::Create("root")); // a common (invisible) parent object for all the shapes
     auto daylight{std::make_shared<Material>("daylight", "shaders/cubemapShader")}; 
@@ -299,8 +299,12 @@ void BasicScene::ScrollCallback(Viewport* viewport, int x, int y, int xoffset, i
     // note: there's a (small) chance the button state here precedes the mouse press/release event
     auto system = camera->GetRotation().transpose();
     if (pickedModel) {
-        pickedModel->TranslateInSystem(system, {0, 0, -float(yoffset)});
-        pickedToutAtPress = pickedModel->GetTout();
+        //change
+        std::shared_ptr<cg3d::Model> currModel = pickedModel;
+        if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end()) // if picked object is a cylinder pick base - avoid arm breaking
+            currModel = cyls[0];
+        currModel->TranslateInSystem(system, {0, 0, -float(yoffset)});
+        pickedToutAtPress = currModel->GetTout();
     } else {
         camera->TranslateInSystem(system, {0, 0, -float(yoffset)});
         cameraToutAtPress = camera->GetTout();
