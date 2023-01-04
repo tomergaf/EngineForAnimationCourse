@@ -348,53 +348,62 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         switch (key) // NOLINT(hicpp-multiway-paths-covered)
         {
-            case GLFW_KEY_ESCAPE:
-                glfwSetWindowShouldClose(window, GLFW_TRUE);
-                break;
-            case GLFW_KEY_UP:
-                cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::X);
-                break;
-            case GLFW_KEY_DOWN:
-                cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::X);
-                break;
-            case GLFW_KEY_LEFT:
-                cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::Y);
-                break;
-            case GLFW_KEY_RIGHT:
-                cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::Y);
-                break;
-            case GLFW_KEY_W:
-                camera->TranslateInSystem(system, {0, 0.1f, 0});
-                break;
-            case GLFW_KEY_S:
-                camera->TranslateInSystem(system, {0, -0.1f, 0});
-                break;
-            case GLFW_KEY_A:
-                camera->TranslateInSystem(system, {-0.1f, 0, 0});
-                break;
-           // case GLFW_KEY_D:
-             //   camera->TranslateInSystem(system, {0.1f, 0, 0});
-               // break;
-            case GLFW_KEY_B:
-                camera->TranslateInSystem(system, {0, 0, 0.1f});
-                break;
-            case GLFW_KEY_F:
-                camera->TranslateInSystem(system, {0, 0, -0.1f});
-                break;
-            case GLFW_KEY_D: {
-
-                Eigen::Vector3f targetDes = autoCube->GetAggregatedTransform().block<3, 1>(0, 3);
-                std::cout << "target = (x: " << targetDes.x() << " y: " << targetDes.y() << " z: " << targetDes.z() << ")" << std::endl;; }
-                break;
-            case 80:
-                if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end())
-                {
-                    auto rotation = pickedModel->GetRotation();
-                    Eigen::Vector3f euler_angles = rotation.eulerAngles(2, 0, 2);
-                    std::cout << "Phi: " << euler_angles[0] * 180.0f / M_PI << " degrees" << std::endl;
-                    std::cout << "Theta: " << euler_angles[1] * 180.0f / M_PI << " degrees" << std::endl;
-                    std::cout << "Psi: " << euler_angles[2] * 180.0f / M_PI << " degrees" << std::endl;
-                }
+        case GLFW_KEY_ESCAPE:
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+            break;
+        case GLFW_KEY_UP:
+            cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::X);
+            break;
+        case GLFW_KEY_DOWN:
+            cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::X);
+            break;
+        case GLFW_KEY_LEFT:
+            cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::Y);
+            break;
+        case GLFW_KEY_RIGHT:
+            cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::Y);
+            break;
+        case GLFW_KEY_W:
+            camera->TranslateInSystem(system, { 0, 0.1f, 0 });
+            break;
+        case GLFW_KEY_S:
+            camera->TranslateInSystem(system, { 0, -0.1f, 0 });
+            break;
+        case GLFW_KEY_A:
+            camera->TranslateInSystem(system, { -0.1f, 0, 0 });
+            break;
+        case GLFW_KEY_D:
+            camera->TranslateInSystem(system, { 0.1f, 0, 0 });
+            break;
+        case GLFW_KEY_B:
+            camera->TranslateInSystem(system, { 0, 0, 0.1f });
+            break;
+        case GLFW_KEY_F:
+            camera->TranslateInSystem(system, { 0, 0, -0.1f });
+            break;
+        case GLFW_KEY_Z: {
+            Eigen::Vector3f targetDes = autoCube->GetAggregatedTransform().block<3, 1>(0, 3);
+            std::cout << "target = (x: " << targetDes.x() << " y: " << targetDes.y() << " z: " << targetDes.z() << ")" << std::endl; }
+                       break;
+        case GLFW_KEY_P:
+            if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end())
+            {
+                auto rotation = pickedModel->GetRotation();
+                Eigen::Vector3f euler_angles = rotation.eulerAngles(2, 0, 2);
+                std::cout << "Phi: " << euler_angles[0] * 180.0f / M_PI << " degrees" << std::endl;
+                std::cout << "Theta: " << euler_angles[1] * 180.0f / M_PI << " degrees" << std::endl;
+                std::cout << "Psi: " << euler_angles[2] * 180.0f / M_PI << " degrees" << std::endl;
+            }
+            break;
+        case GLFW_KEY_T: {
+            Eigen::Vector3f tip = ikCylPosition(lastLinkIndex, CYL_LENGTH);
+            std::cout << "target = (x: " << tip.x() << " y: " << tip.y() << " z: " << tip.z() << ")" << std::endl; }
+                       break;
+        case GLFW_KEY_N: {
+            if (pickedIndex < cyls.size() - 1)
+                pickedIndex++;
+            else
+                pickedIndex = 0; }
                 break;
             case GLFW_KEY_1:
                 if( pickedIndex > 0)
