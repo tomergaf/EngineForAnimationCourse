@@ -1,0 +1,21 @@
+Git Repo: https://github.com/tomergaf/EngineForAnimationCourse 
+Assignment branch:  https://github.com/tomergaf/EngineForAnimationCourse/tree/Assignment3/tutorial/Assignment3
+
+by: Tomer Gafsou & Alon Zarfati
+
+Changes:
+
+%Assignment3 Project Added - this project is an extention of project Example1 that is written in the original engine reposetory 
+
+-BasicScene:
+
+%ikCyclicCoordinateDecentMethod - this is the implementation of the Cyclic Coordinates Decent method for IK solver  which makes the hand 
+move to a targeted position by rotating the cylinders.
+
+%ikCylPosition - a helper function which is used to now each cylnder position.
+
+%BasicScene::KeyCallback - added required callbacks. the destination position callback is instead assign to key 'z'.
+
+%BasicScene::ScrollCallback - changed so that on picking a link, the whole arm will be translated.
+
+%BasicScene::CursorPosCallbac- changed so that on picking a link, the whole arm will be rotated.
