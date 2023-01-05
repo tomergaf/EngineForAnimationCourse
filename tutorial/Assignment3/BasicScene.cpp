@@ -356,16 +356,32 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
             glfwSetWindowShouldClose(window, GLFW_TRUE);
             break;
         case GLFW_KEY_UP:
-            cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::X);
+            if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end()) {
+                cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::X);
+            }
+            else
+                root->RotateInSystem(system, 0.1f, Axis::X);
             break;
         case GLFW_KEY_DOWN:
-            cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::X);
+            if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end()) {
+                cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::X);
+            }
+            else
+                root->RotateInSystem(system, -0.1f, Axis::X);
             break;
         case GLFW_KEY_LEFT:
-            cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::Y);
+            if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end()) {
+                cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::Y);
+            }
+            else
+                root->RotateInSystem(system, 0.1f, Axis::Y);
             break;
         case GLFW_KEY_RIGHT:
-            cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::Y);
+            if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end()) {
+                cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::Y);
+            }
+            else
+                root->RotateInSystem(system, -0.1f, Axis::Y);
             break;
         case GLFW_KEY_W:
             camera->TranslateInSystem(system, { 0, 0.1f, 0 });
