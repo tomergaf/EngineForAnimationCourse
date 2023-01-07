@@ -405,16 +405,45 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
             Eigen::Vector3f targetDes = autoCube->GetAggregatedTransform().block<3, 1>(0, 3);
             std::cout << "target = (x: " << targetDes.x() << " y: " << targetDes.y() << " z: " << targetDes.z() << ")" << std::endl; }
                        break;
-        case GLFW_KEY_P:
+        case GLFW_KEY_H: {
+            Eigen::Matrix3f rotation;
             if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end())
-            {
-                auto rotation = pickedModel->GetRotation();
-                Eigen::Vector3f euler_angles = rotation.eulerAngles(2, 0, 2);
-                std::cout << "Phi: " << euler_angles[0] * 180.0f / M_PI << " degrees" << std::endl;
-                std::cout << "Theta: " << euler_angles[1] * 180.0f / M_PI << " degrees" << std::endl;
-                std::cout << "Psi: " << euler_angles[2] * 180.0f / M_PI << " degrees" << std::endl;
-            }
+                rotation = pickedModel->GetRotation();
+            else
+                rotation = root->GetRotation();
+            Eigen::Vector3f euler_angles = rotation.eulerAngles(2, 0, 2);
+            std::cout << "Phi: " << euler_angles[0] * 180.0f / M_PI << " degrees" << std::endl;
+            std::cout << "Theta: " << euler_angles[1] * 180.0f / M_PI << " degrees" << std::endl;
+            std::cout << "Psi: " << euler_angles[2] * 180.0f / M_PI << " degrees" << std::endl;
             break;
+        }
+        case GLFW_KEY_P: {
+            Eigen::Matrix3f rotation;
+            if (std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end())
+                rotation = pickedModel->GetRotation();
+            else
+                rotation = root->GetRotation();
+            Eigen::Vector3f euler_angles = rotation.eulerAngles(2, 0, 2);
+            Eigen::Matrix3f phi;
+            phi.row(0) = Eigen::Vector3f(cos(euler_angles.x()), -sin(euler_angles.x()), 0);
+            phi.row(1) = Eigen::Vector3f(sin(euler_angles.x()), cos(euler_angles.x()), 0);
+            phi.row(2) = Eigen::Vector3f(0, 0, 1);
+
+            Eigen::Matrix3f theta;
+            theta.row(0) = Eigen::Vector3f(1, 0, 0);
+            theta.row(1) = Eigen::Vector3f(0, cos(euler_angles.y()), -sin(euler_angles.y()));
+            theta.row(2) = Eigen::Vector3f(0, sin(euler_angles.y()), cos(euler_angles.y()));
+
+            Eigen::Matrix3f psi;
+            psi.row(0) = Eigen::Vector3f(cos(euler_angles.z()), -sin(euler_angles.z()), 0);
+            psi.row(1) = Eigen::Vector3f(sin(euler_angles.z()), cos(euler_angles.z()), 0);
+            psi.row(2) = Eigen::Vector3f(0, 0, 1);
+
+            std::cout << "Phi matrix: " << std::endl <<phi <<  std::endl;
+            std::cout << "Theta matrix: " << std::endl << theta << std::endl;
+            std::cout << "Psi matrix: " << std::endl << psi << std::endl;
+            break;
+        }
         case GLFW_KEY_T: {
             Eigen::Vector3f tip = ikCylPosition(lastLinkIndex, CYL_LENGTH);
             std::cout << "target = (x: " << tip.x() << " y: " << tip.y() << " z: " << tip.z() << ")" << std::endl; }
