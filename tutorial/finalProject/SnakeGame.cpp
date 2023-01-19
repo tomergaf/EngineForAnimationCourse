@@ -18,6 +18,7 @@
 
 
 using namespace cg3d;
+using namespace Game;
 
 void SnakeGame::BuildImGui()
 {
@@ -121,6 +122,10 @@ void SnakeGame::SetCamera(int index)
 
 void SnakeGame::Init(float fov, int width, int height, float near, float far)
 {
+    //TEMP
+    velInterval =0.1f;
+    auto gameMAnager = new GameManager();
+    animate = true;
     // create the basic elements of the scene
     AddChild(root = Movable::Create("root")); // a common (invisible) parent object for all the shapes
     auto program = std::make_shared<Program>("shaders/basicShader"); 
@@ -143,9 +148,24 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
 
     //init snake object
     auto snakeMesh{ObjLoader::MeshFromObjFiles<std::string>("snakeMesh", "data/snake2.obj")};
-    auto snake = Snake::CreateSnake(grass, snakeMesh, 16);
+    auto snakeModel{Model::Create("snake", snakeMesh, grass)};
+
+
+    auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
+        // static float prevDistance = -1;
+        // float distance = (visitor->view * visitor->norm * model->GetAggregatedTransform()).norm();
+        // if (prevDistance != distance)
+        //     debug(model->name, " distance from camera: ", prevDistance = distance);
+        // return distance > 3 ? 1 : 0;
+        return 0;
+    };
+
+    std::shared_ptr<AutoMorphingModel> autoSnake = AutoMorphingModel::Create(*snakeModel, morphFunc);
+    autoSnake->showWireframe = false;
+    snake = Snake::CreateSnake(grass, autoSnake, 16);
+    
      
-    root->AddChild(snake->GetModel());
+    root->AddChild(snake->autoSnake);
 
     // create the camera objects
 
@@ -154,7 +174,7 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
     camList[0] = Camera::Create("camera0", fov, float(width) / float(height), near, far);
     camList[0]->Translate(-1, Axis::X);
     camList[0]->RotateByDegree(90, Axis::Y);
-    snake->GetModel()->AddChild(camList[0]);
+    snake->autoSnake->AddChild(camList[0]);
     
     // top down camera
     for (int i = 1; i < camList.size(); i++) {
@@ -183,6 +203,17 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
     background->SetStatic();
 }
 
+void SnakeGame::AnimateUntilCollision(std::shared_ptr<Snake> snakeModel){
+	if(!snakeModel->IsColliding()){
+        Eigen::Vector3f moveVector = snakeModel->GetMoveDirection();
+		// moveVector = {-1*velocityX,1*velocityY,1*velocityZ};
+		// moveVector = {-1*moveVector(0),1*moveVector(1),1*moveVector(2)}*snakeModel->GetMoveSpeed();
+		moveVector = snakeModel->GetMoveDirection() * snakeModel->GetMoveSpeed();
+		snakeModel->autoSnake->Translate(moveVector);
+        // debug_print(moveVector);
+	}
+}
+
 void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model)
 {
     Scene::Update(p, proj, view, model);
@@ -192,6 +223,7 @@ void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eige
     p.SetUniform1f("specular_exponent", 5.0f);
     p.SetUniform4f("light_position", 0.0, 15.0f, 0.0, 1.0f);
     if (animate) {
+        AnimateUntilCollision(this->snake);
        
     }
 }
@@ -204,13 +236,47 @@ void SnakeGame::LoadObjectFromFileDialog()
     auto shape = Model::Create(filename, carbon);
 }
 
+// TEMP Motion
+
+void SnakeGame::UpdateXVelocity(bool direction){ //function for changing velocity on button click
+
+	float change = direction ? velInterval*1 : velInterval*-1;
+	snake->AddVelocity(change, Axis::X);
+}
+
+void SnakeGame::UpdateYVelocity(bool direction){
+	float change = direction ? velInterval*1 : velInterval*-1;
+	snake->AddVelocity(change, Axis::Y);
+}
+
+void SnakeGame::UpdateZVelocity(bool direction){
+	float change = direction ? velInterval*1 : velInterval*-1;
+	snake->AddVelocity(change, Axis::Z);
+}
+
+void SnakeGame::StopMotion(){
+	snake->StopMoving();
+}
+
+
 void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
-        if (key == GLFW_KEY_SPACE)
-            SetActive(!IsActive());
+        // if (key == GLFW_KEY_SPACE)
+        //     SetActive(!IsActive());
 
+        // Temp Motion
+		if (key == GLFW_KEY_SPACE)
+			StopMotion();
+		if (key == GLFW_KEY_UP) 
+			UpdateYVelocity(true);
+		if (key == GLFW_KEY_DOWN) 
+			UpdateYVelocity(false);
+		if (key == GLFW_KEY_LEFT) 
+			UpdateXVelocity(true);
+		if (key == GLFW_KEY_RIGHT) 
+			UpdateXVelocity(false);
         // keys 1-9 are objects 1-9 (objects[0] - objects[8]), key 0 is object 10 (objects[9])
         if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
             if (int index; (index = (key - GLFW_KEY_1 + 10) % 10) < camList.size())
@@ -218,7 +284,7 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
         }
     }
 
-    SceneWithImGui::KeyCallback(nullptr, x, y, key, scancode, action, mods);
+    //SceneWithImGui::KeyCallback(nullptr, x, y, key, scancode, action, mods);
 }
 
 void SnakeGame::ViewportSizeCallback(Viewport* _viewport)
