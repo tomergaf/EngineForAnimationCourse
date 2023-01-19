@@ -33,6 +33,8 @@
 using namespace cg3d;
 using namespace std;
 
+#define MAX_HEALTH 5.0 //TODO make this config file property
+#define MOVE_SPEED 10.0 //TODO make this config file property
 
 Snake::Snake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::Mesh> mesh, int links){
     snakeMesh = mesh;
@@ -51,6 +53,12 @@ std::shared_ptr<AutoMorphingModel> Snake::GetModel(){
 
 std::shared_ptr<Snake> Snake::CreateSnake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::Mesh> mesh, int numOfLinks){
     return std::shared_ptr<Snake>{new Snake{program, mesh, numOfLinks}};
+ }
+
+ void Snake::Die()
+ {
+    isAlive = false;
+    gameManager.GameEnd();
  }
 
 void Snake::InitSnake(){
@@ -97,4 +105,28 @@ void Snake::InitSnake(){
     }
     // cyls[0]->Translate({0,0,0.8f*scaleFactor});
     cyls[0]->Translate({0.8f*scaleFactor,0,0});
+
+    InitGameValues();
+    
+}
+
+void Snake::DecreaseHealth(float amount)
+{
+    currHealth = (currHealth - amount)>=0 ? currHealth-amount : 0;
+    if(currHealth==0){
+        Die();
+    }
+}
+
+void Snake::IncreaseHealth(float amount)
+{
+    currHealth = (currHealth + amount)<=maxHealth ? currHealth+amount : maxHealth;
+}
+
+void Snake::InitGameValues(){
+    isAlive = true;
+    shouldAnimate = false;
+    maxHealth = MAX_HEALTH;
+    currHealth = maxHealth;
+    moveSpeed = MOVE_SPEED;
 }
