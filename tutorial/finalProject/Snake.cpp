@@ -34,10 +34,13 @@ using namespace cg3d;
 using namespace std;
 
 #define MAX_HEALTH 5.0 //TODO make this config file property
-#define MOVE_SPEED 10.0 //TODO make this config file property
+#define MOVE_SPEED 0.03 //TODO make this config file property
 
-Snake::Snake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::Mesh> mesh, int links){
-    snakeMesh = mesh;
+namespace Game{
+
+
+Snake::Snake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int links): autoSnake(model) {
+    // snakeMesh = mesh;
     snakeProgram = program;
     numOfLinks = links;
     InitSnake();
@@ -51,36 +54,57 @@ std::shared_ptr<AutoMorphingModel> Snake::GetModel(){
     return autoSnake;
  }
 
-std::shared_ptr<Snake> Snake::CreateSnake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::Mesh> mesh, int numOfLinks){
-    return std::shared_ptr<Snake>{new Snake{program, mesh, numOfLinks}};
+std::shared_ptr<Snake> Snake::CreateSnake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int numOfLinks){
+    // return std::shared_ptr<Snake>{new Snake{program, model, numOfLinks}};
+    return std::shared_ptr<Snake>{new Snake(program, model, numOfLinks)};
  }
 
  void Snake::Die()
  {
     isAlive = false;
-    gameManager.GameEnd();
+    gameManager->GameEnd();
+ }
+
+ void Snake::AddVelocity(float amount, cg3d::Model::Axis axis)
+ {
+    //handle x velocity
+    if (axis == cg3d::Model::Axis::X || axis == cg3d::Model::Axis::XY || axis == cg3d::Model::Axis::XZ || axis == cg3d::Model::Axis::XYZ) 
+        velocityX += amount;
+    //handle y velocity
+    if (axis == cg3d::Model::Axis::Y || axis == cg3d::Model::Axis::XY || axis == cg3d::Model::Axis::YZ || axis == cg3d::Model::Axis::XYZ) 
+        velocityY += amount;
+    //handle z velocity
+    if (axis == cg3d::Model::Axis::Z || axis == cg3d::Model::Axis::XZ || axis == cg3d::Model::Axis::YZ || axis == cg3d::Model::Axis::XYZ) 
+        velocityZ += amount;
+ }
+
+ void Snake::StopMoving()
+ {
+    velocityX = velocityY = velocityZ = 0;
+ }
+
+ float Snake::GetMoveSpeed()
+ {
+    return moveSpeed;
+ }
+
+ bool Snake::IsColliding()
+ {
+    return false;
+ }
+
+ Eigen::Vector3f Snake::GetMoveDirection()
+ {
+    return Eigen::Vector3f(velocityX,velocityY,velocityZ).normalized();
  }
 
 void Snake::InitSnake(){
    
-    auto snake{Model::Create("snake", snakeMesh, snakeProgram)};
+    //add head to list
+    GameObject* link = new GameObject(snakeProgram, autoSnake);
+    links.push_back(std::make_shared<Game::GameObject>(*link));
 
-
-    auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
-        // static float prevDistance = -1;
-        // float distance = (visitor->view * visitor->norm * model->GetAggregatedTransform()).norm();
-        // if (prevDistance != distance)
-        //     debug(model->name, " distance from camera: ", prevDistance = distance);
-        // return distance > 3 ? 1 : 0;
-        return 0;
-    };
-
-    autoSnake = AutoMorphingModel::Create(*snake, morphFunc);
-    autoSnake->showWireframe = false;
-
-    //init links
-
-    // auto material{ std::make_shared<Material>("material", snakeProgram)}; // empty material
+    //create links
     auto cylMesh{IglLoader::MeshFromFiles("cyl_igl","data/xcylinder.obj")};
     float scaleFactor = 0.3f; 
     std::vector<std::shared_ptr<cg3d::Model>> cyls;
@@ -90,6 +114,10 @@ void Snake::InitSnake(){
     cyls[0]->SetCenter(Eigen::Vector3f(-0.8f*scaleFactor,0,0));
     // cyls[0]->RotateByDegree(90, Eigen::Vector3f(0,1,0));
     autoSnake->AddChild(cyls[0]);
+
+    // add first link to game objects list
+    link = new GameObject(snakeProgram, cyls[0]);
+    links.push_back(std::make_shared<Game::GameObject>(*link));
 
     for(int i = 1;i < numOfLinks; i++)
         { 
@@ -101,6 +129,8 @@ void Snake::InitSnake(){
         cyls[i]->SetCenter(Eigen::Vector3f(-0.8f*scaleFactor,0,0));
         // cyls[i]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
         cyls[i-1]->AddChild(cyls[i]);   
+        link = new GameObject(snakeProgram, cyls[i]);
+        links.push_back(std::make_shared<Game::GameObject>(*link));
       
     }
     // cyls[0]->Translate({0,0,0.8f*scaleFactor});
@@ -129,4 +159,6 @@ void Snake::InitGameValues(){
     maxHealth = MAX_HEALTH;
     currHealth = maxHealth;
     moveSpeed = MOVE_SPEED;
+    StopMoving();
+}
 }
