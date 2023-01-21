@@ -1,4 +1,7 @@
 #include "GameManager.h"
+#include "Util.h"
+#include "Snake.h"
+
 
 
 namespace Game{
@@ -27,6 +30,7 @@ namespace Game{
     {
         // launch menu
         // update high score?
+        Util::DebugPrint("Score is: " + std::to_string(score));
         // see score and high score
         // pause everything
     }
@@ -53,6 +57,7 @@ namespace Game{
         score += amount;
         if (score >GetHighScore())
             SetHighScore(score);
+        Util::DebugPrint("score is: " + std::to_string(score));
     }
 
     void GameManager::DecreaseScore(float amount)
@@ -78,6 +83,7 @@ namespace Game{
     void GameManager::SetHighScore(float amount)
     {
         highScore = amount;
+        Util::DebugPrint("High score is: " + std::to_string(score));
     }
 
     void GameManager::SetScore(float amount){

@@ -10,6 +10,8 @@
 
 #include "GameManager.h"
 #include "GameObject.h"
+#include "SnakeGame.h"
+
 
 namespace Game{
 
@@ -18,28 +20,30 @@ namespace Game{
         public:
 
             //model related
-            Snake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int links);
+            Snake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int links, SnakeGame* scene);
             void ResetSnake();
             int GetNumOfLinks();
-            std::shared_ptr<cg3d::AutoMorphingModel> GetModel();
-            static std::shared_ptr<Snake> CreateSnake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int links);
-            bool shouldAnimate;
-            std::vector<std::shared_ptr<GameObject>> links;
-            //game related
-            void GetHit();
+            void GetHit(float amount);
             void Die();
-                //TODO support pickups
             void AddVelocity(float amount, cg3d::Model::Axis axis);
             void StopMoving();
             float GetMoveSpeed();
             bool IsColliding();
+            void InitSnake();
+            void IncreaseHealth(float amount);
+            void DecreaseHealth(float amount);
+            std::shared_ptr<cg3d::AutoMorphingModel> GetModel();
+            static std::shared_ptr<Snake> CreateSnake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int links, SnakeGame* scene);
+            bool shouldAnimate;
+            std::vector<std::shared_ptr<GameObject>> links;
+            //game related
             Eigen::Vector3f GetMoveDirection();
             std::shared_ptr<cg3d::AutoMorphingModel> autoSnake;
+            SnakeGame* scene;
 
         private:
             
             std::shared_ptr<cg3d::Material> snakeProgram;
-            void InitSnake();
             int numOfLinks;
 
             //game attributes
@@ -55,10 +59,8 @@ namespace Game{
             bool isColliding;
 
         
-
             void InitGameValues();
-            void DecreaseHealth(float amount);
-            void IncreaseHealth(float amount);
+
 
 
     };

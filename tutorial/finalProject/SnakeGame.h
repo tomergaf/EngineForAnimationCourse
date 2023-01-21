@@ -5,24 +5,34 @@
 
 #include <memory>
 #include <utility>
-#include "Snake.h"
 
 
 
 
+        namespace Game{
+        class Snake;
+        class GameObject;
+        class MovingObject;
+        class GameManager;
+        }
     class SnakeGame : public cg3d::SceneWithImGui
     {
+
     private:
+        void BuildImGui() override;
         std::shared_ptr<Game::Snake> snake;
         std::shared_ptr<Movable> root;
         std::shared_ptr<cg3d::Material> carbon;
         bool animate;
-        void BuildImGui() override;
         std::vector<std::shared_ptr<cg3d::Camera>> camList{2};
-        std::shared_ptr<cg3d::Model> cube1, cube2, cylinder, sphere1, sphere2;
+        std::vector<std::shared_ptr<Game::MovingObject>> interactables;
+        std::shared_ptr<Game::MovingObject> sphereObj,sphereObj2;
         cg3d::Viewport* viewport = nullptr;
+        int ticks=0;
 
     public:
+        std::shared_ptr<cg3d::Model> cube1, cube2, cylinder, sphere1, sphere2, collisionCube1, collisionCube2;
+        std::shared_ptr<Game::GameManager> gameManager;
         float velInterval;
         SnakeGame(std::string name, cg3d::Display* display);
         void Init(float fov, int width, int height, float near, float far);
@@ -31,9 +41,10 @@
         void KeyCallback(cg3d::Viewport* _viewport, int x, int y, int key, int scancode, int action, int mods) override;
         void AddViewportCallback(cg3d::Viewport* _viewport) override;
         void ViewportSizeCallback(cg3d::Viewport* _viewport) override;
+        static void PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh, bool custom);
+        void ShowObject(std::shared_ptr<cg3d::Model> model, bool dir);
 
     private:
-        void ShowObject(std::shared_ptr<cg3d::Model> model, bool dir);
         inline bool IsActive() const { return animate; };
         inline void SetActive(bool _isActive = true) { animate = _isActive; }
         void LoadObjectFromFileDialog();
