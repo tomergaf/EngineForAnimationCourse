@@ -2,6 +2,8 @@
 #include "GameManager.h"
 #include "GameManager.h"
 #include "Utility.h"
+#include "Util.h"
+#include "SnakeGame.h"
 
 #define GENERIC_CYCLES 50
 
@@ -18,6 +20,7 @@ GameObject::GameObject(std::shared_ptr<cg3d::Material> material, std::shared_ptr
     this->timeout = 0;
     this->permaGone = false;
     this->cycles = GENERIC_CYCLES;
+	this->partOfSnake = (material->name)==SNAKE_NAME;
     this->thisShared = std::make_shared<GameObject>(*this);
     this->scene->gameManager->gameObjects.push_back(thisShared);
 }
@@ -35,6 +38,19 @@ void GameObject::InitCollider()
 
 
 }
+
+
+//  std::shared_ptr<GameObject> GameObject::SpawnObject(float xCoordinate, float yCoordinate, float zCoordinate, std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame* scene){
+// 	//create object
+// 	std::shared_ptr<GameObject> gameObject{new Game::GameObject{material, model, scene}};
+// 	//move to location
+// 	scene->root->AddChild(gameObject);
+// 	gameObject->model->Translate(Eigen::Vector3f{xCoordinate, yCoordinate, zCoordinate});
+// 	//add to logs
+// 	Util::DebugPrint(gameObject.name + " added at : " + std::to_string(Eigen::Vector3f{xCoordinate, yCoordinate, zCoordinate}));
+// 	return gameObject;
+	
+// }
 
 void GameObject::DrawBox(Eigen::AlignedBox<double, 3>& box, int color,std::shared_ptr<cg3d::Model> model){
     //TEMP JSUT FOR DEBUG

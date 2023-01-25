@@ -40,6 +40,11 @@ namespace Game{
             Eigen::Vector3f GetMoveDirection();
             std::shared_ptr<cg3d::AutoMorphingModel> autoSnake;
             SnakeGame* scene;
+            void Move(Eigen::Vector3d t);
+            void Skinning(Eigen::Vector3d t);
+
+            void CalcWeight(Eigen::MatrixXd &V, double min_z);
+            Eigen::Vector3d moveDir;
 
         private:
             
@@ -57,10 +62,35 @@ namespace Game{
             float velocityZ;
             bool isAlive;
             bool isColliding;
+            float linkLen;
+
 
         
             void InitGameValues();
 
+            void initJoints();
+
+            void RestartSnake();
+
+            // TEMP - change later
+            typedef
+                std::vector<Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond> >
+                RotationList;
+            Eigen::MatrixXd V;
+            Eigen::MatrixXd VHead; // Vertices of the current mesh (#V x 3)
+            Eigen::MatrixXi FHead; // Faces of the mesh (#F x 3)
+            Eigen::MatrixXd CT;
+            Eigen::MatrixXi BET;
+            Eigen::MatrixXd W, Cp, U, M;
+            Eigen::MatrixXi  BE;
+            Eigen::VectorXi P;
+            RotationList rest_pose;
+            RotationList anim_pose;
+            std::vector<RotationList > poses; // rotations of joints for animation
+            RotationList vQ;
+            std::vector<Eigen::Vector3d> vC;
+            std::vector<Eigen::Vector3d> vT;
+            Eigen::Quaterniond quat;
 
 
     };

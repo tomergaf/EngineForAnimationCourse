@@ -10,6 +10,7 @@ public:
     Pickup(std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame* scene);
     void OnCollision();
     virtual void RunAction();
+    static Pickup *SpawnObject(float xCoordinate, float yCoordinate, float zCoordinate, std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame *scene);
     void Update();
 
 private:

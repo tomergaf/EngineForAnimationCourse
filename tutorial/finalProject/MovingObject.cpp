@@ -1,4 +1,5 @@
 #include "MovingObject.h"
+#include "Util.h"
 
 #define SPEED 10
 #define TIMEOUT 1000
@@ -14,6 +15,19 @@ Game::MovingObject::MovingObject(std::shared_ptr<cg3d::Material> material, std::
 	this->moveBackwards = false;
     this->GenerateBezierCurve();
 }
+
+// Game::MovingObject* Game::MovingObject::SpawnObject(float xCoordinate, float yCoordinate, float zCoordinate, std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame *scene)
+// {
+//     //create object
+// 	Game::MovingObject* movingObject = new Game::MovingObject{material, model, scene};
+// 	//move to location
+// 	scene->root->AddChild(movingObject->model);
+// 	Eigen::Vector3f posVec{xCoordinate, yCoordinate, zCoordinate};
+// 	movingObject->model->Translate(posVec);
+// 	//add to logs
+// 	Util::DebugPrint(movingObject->name + " added at : " + std::to_string(xCoordinate) + ", " + std::to_string(yCoordinate) + ", " + std::to_string(zCoordinate));
+// 	return movingObject;
+// }
 
 void Game::MovingObject::GenerateBezierCurve() {
 

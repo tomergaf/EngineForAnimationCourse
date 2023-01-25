@@ -1,21 +1,23 @@
 #include "GameManager.h"
 #include "Util.h"
 #include "Snake.h"
+#include "SpawnManager.h"
 
 
 
 namespace Game{
 //TODO implement json configuration loading
 
-    GameManager::GameManager() 
+    GameManager::GameManager(SpawnManager* spawnManager) 
     {
+        this->spawnManager = spawnManager;
         InitValues();
     }
 
     void GameManager::InitValues()
     {
         SetScore(0);
-        currWave=0;
+        currWave=1;
     }
 
 
@@ -24,6 +26,8 @@ namespace Game{
         // init values that are not highscore
         InitValues();    
         // signal wave manager
+        //TEMP - set values according to wave
+        spawnManager->SpawnWave(2,2,2);
     }
 
     void GameManager::GameEnd()

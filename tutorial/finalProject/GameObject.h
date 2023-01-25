@@ -19,6 +19,7 @@ namespace Game{
             void InitCollider();
             bool CollidingWith(std::shared_ptr<Game::GameObject> otherObject);
             bool ObjectsCollided(igl::AABB<Eigen::MatrixXd, 3> *boxTreeA, igl::AABB<Eigen::MatrixXd, 3> *boxTreeB, std::shared_ptr<Game::GameObject> thisObject, std::shared_ptr<Game::GameObject> otherObject);
+            
             void Collide();
             void Trigger();
             void Hide();
@@ -31,11 +32,13 @@ namespace Game{
             
             bool isActive;
             bool permaGone;
+            bool partOfSnake;
             int timeout;
             int ticks;
             int cycles;
 
         protected:
+
             void DrawBox(Eigen::AlignedBox<double, 3> &box, int color, std::shared_ptr<cg3d::Model> model);
             bool BoxesIntersect(Eigen::AlignedBox<double, 3> &boxA, Eigen::AlignedBox<double, 3> &boxB, std::shared_ptr<Game::GameObject> thisObject, std::shared_ptr<Game::GameObject> otherObject);
             bool AdvanceTime();

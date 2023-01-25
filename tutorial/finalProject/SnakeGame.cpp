@@ -30,6 +30,7 @@
 #include "Snake.h"
 #include "GameManager.h"
 #include "GameObject.h"
+#include "SpawnManager.h"
 
 #include "imgui.h"
 #include "file_dialog_open.h"
@@ -37,6 +38,8 @@
 
 //TEMP
 #define DECIMATION_MULT 0.5
+#define STAGE_SIZE 15
+
 
 using namespace std;
 using namespace Eigen;
@@ -350,7 +353,9 @@ void SnakeGame::PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh, bool custom)
 void SnakeGame::Init(float fov, int width, int height, float near, float far)
 {
     //init manager
-    GameManager* gameManagerPtr = new GameManager();
+    float sz = STAGE_SIZE;
+    SpawnManager* spawnManager = new SpawnManager(sz, sz, sz, this);
+    GameManager* gameManagerPtr = new GameManager(spawnManager);
     gameManager = std::make_shared<GameManager>(*gameManagerPtr);
     //TEMP
     velInterval =0.1f;
@@ -366,19 +371,21 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
 
     auto bricks{std::make_shared<Material>("bricks", program)};
     auto grass{std::make_shared<Material>("grass", program)};
+    auto snakeMaterial{std::make_shared<Material>(SNAKE_NAME, program)};
     auto daylight{std::make_shared<Material>("daylight", "shaders/cubemapShader")};
 
     bricks->AddTexture(0, "textures/bricks.jpg", 2);
     grass->AddTexture(0, "textures/grass.bmp", 2);
+    snakeMaterial->AddTexture(0, "textures/snake.jpg", 2);
     daylight->AddTexture(0, "textures/cubemaps/Daylight Box_", 3);
 
     auto background{Model::Create("background", Mesh::Cube(), daylight)};
     AddChild(background);
 
     //init snake object
-    auto snakeMesh{ObjLoader::MeshFromObjFiles<std::string>("snakeMesh", "data/snake1.obj")};
+    auto snakeMesh{ObjLoader::MeshFromObjFiles<std::string>("snakeMesh", "data/snake3.obj")};
     snakeMesh->data.push_back(IglLoader::MeshFromFiles("cyl_igl","data/xcylinder.obj")->data[0]);
-    auto snakeModel{Model::Create("snake", snakeMesh, grass)};
+    auto snakeModel{Model::Create("snake", snakeMesh, snakeMaterial)};
 
     auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
         return 0;
@@ -386,7 +393,8 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
 
     std::shared_ptr<AutoMorphingModel> autoSnake = AutoMorphingModel::Create(*snakeModel, morphFunc);
     autoSnake->showWireframe = false;
-    snake = Game::Snake::CreateSnake(grass, autoSnake, 16, this);
+    // autoSnake->RotateByDegree(90, Eigen::Vector3f(0,1,0));
+    snake = Game::Snake::CreateSnake(snakeMaterial, autoSnake, 16, this);
     gameManager->snake = snake;
     root->AddChild(snake->autoSnake);
 
@@ -406,8 +414,8 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
         auto model = Model::Create(std::string("camera") + std::to_string(i), camMesh, bricks);
         // auto model = ObjLoader::ModelFromObj(std::string("camera") + std::to_string(i), "data/camera.obj", carbon);
         ShowObject(model, false);
-        // root->AddChild(camList[i] = CamModel::Create(*camera, *model));
-        snake->autoSnake->AddChild(camList[i] = CamModel::Create(*camera, *model));
+        root->AddChild(camList[i] = CamModel::Create(*camera, *model));
+        // snake->autoSnake->AddChild(camList[i] = CamModel::Create(*camera, *model));
     }
 
 
@@ -415,7 +423,7 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
     camList[1]->RotateByDegree(-90, Axis::X);
     camera = camList[1];
     
-
+    //TEMP remove these
     cube1 = Model::Create("cube1", Mesh::Cube(), bricks);
     cube2 = Model::Create("cube2", Mesh::Cube(), bricks);
     cube1->Translate({-3, 0, -5});
@@ -432,8 +440,9 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
     sphereObj2 = std::make_shared<HealthPickup>(*spherePointer2);
     interactables.push_back(sphereObj2);
     auto sphere3 = Model::Create("sphere3", sphereMesh, bricks);
-    interactables.push_back(std::make_shared<Obstacle>(*(new Game::Obstacle(bricks, sphere3, this))));
-   
+    interactables.push_back(std::make_shared<Obstacle>(*(Obstacle::SpawnObject(1, 1, 1, bricks, sphere3, this))));
+    // interactables.push_back(std::make_shared<Obstacle>(*(new Game::Obstacle(bricks, sphere3, this))));
+//    
     
     // TEMP Collisions setup
     auto collisionCube1Mesh {IglLoader::MeshFromFiles("collisioncube1mesh", "data/cube.off")};
@@ -455,6 +464,8 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
     sphere1->Translate({-2, 0, 0});
     sphere2->Translate({-6, 0, 0});
     sphere3->Translate({-8, 0, 0});
+
+    gameManager->GameStart();
     root->AddChildren({cube1, cube2, sphere1, sphere2, sphere3});
 
     background->Scale(120, Axis::XYZ);
@@ -464,11 +475,16 @@ void SnakeGame::Init(float fov, int width, int height, float near, float far)
 
 void SnakeGame::AnimateUntilCollision(std::shared_ptr<Game::Snake> snakeModel){
 	if(!snakeModel->IsColliding()){
-        Eigen::Vector3f moveVector = snakeModel->GetMoveDirection();
+        // Eigen::Vector3f moveVector = snakeModel->GetMoveDirection();
+        Eigen::Vector3d moveVector;
 		// moveVector = {-1*velocityX,1*velocityY,1*velocityZ};
 		// moveVector = {-1*moveVector(0),1*moveVector(1),1*moveVector(2)}*snakeModel->GetMoveSpeed();
-		moveVector = snakeModel->GetMoveDirection() * snakeModel->GetMoveSpeed();
-		snakeModel->autoSnake->Translate(moveVector);
+		// moveVector = snakeModel->GetMoveDirection() * snakeModel->GetMoveSpeed();
+		// snakeModel->autoSnake->Translate(moveVector);
+        // moveVector = Vector3d{0,0,0.04};
+        moveVector = snake->moveDir;
+		snake->Skinning(moveVector);
+		// snake->Skinning(moveVector.cast<double>());
         // debug_print(moveVector);
 	}
 }
@@ -483,18 +499,23 @@ void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eige
     p.SetUniform4f("light_position", 0.0, 15.0f, 0.0, 1.0f);
     if (animate) {
         
-        AnimateUntilCollision(this->snake);
+        ticks+=1;
         //TEMP
         // sphereObj->DrawCurve();
         // Eigen::Vector3f dir = sphereObj->MoveBezier();
-        ticks+=1;
-        if(ticks % 2 == 0){
+        if(ticks % 5 == 0){
+            AnimateUntilCollision(this->snake);
             for (auto & elem : interactables){
 
                 elem->Update();
             }
         }
     }
+}
+
+void SnakeGame::AddInteractable(std::shared_ptr<Game::MovingObject> interactable)
+{
+    interactables.push_back(interactable);
 }
 
 void SnakeGame::LoadObjectFromFileDialog()
@@ -539,14 +560,29 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
         // Temp Motion
 		if (key == GLFW_KEY_SPACE)
 			StopMotion();
-		if (key == GLFW_KEY_UP) 
-			UpdateYVelocity(true);
-		if (key == GLFW_KEY_DOWN) 
-			UpdateYVelocity(false);
-		if (key == GLFW_KEY_LEFT) 
-			UpdateXVelocity(true);
-		if (key == GLFW_KEY_RIGHT) 
-			UpdateXVelocity(false);
+		if (key == GLFW_KEY_UP)
+			snake->moveDir = Eigen::Vector3d(0, snake->GetMoveSpeed(), 0);
+		if (key == GLFW_KEY_DOWN)
+            snake->moveDir = Eigen::Vector3d(0, -1*snake->GetMoveSpeed(), 0);
+		
+		if (key == GLFW_KEY_LEFT)
+			snake->moveDir = Eigen::Vector3d(-1*snake->GetMoveSpeed(), 0, 0);
+		
+		if (key == GLFW_KEY_RIGHT)
+			snake->moveDir = Eigen::Vector3d(snake->GetMoveSpeed(), 0, 0);
+		
+        
+        
+        // if (key == GLFW_KEY_UP) 
+        //     snake->GetModel()->RotateByDegree(3, Axis::X);
+		// 	// UpdateYVelocity(true);
+		// if (key == GLFW_KEY_DOWN) 
+		// 	UpdateYVelocity(false);
+		// if (key == GLFW_KEY_LEFT)
+        //     snake->GetModel()->RotateByDegree(3, Axis::Y);
+		// 	// UpdateXVelocity(true);
+		// if (key == GLFW_KEY_RIGHT) 
+		// 	UpdateXVelocity(false);
         // keys 1-9 are objects 1-9 (objects[0] - objects[8]), key 0 is object 10 (objects[9])
         if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
             if (int index; (index = (key - GLFW_KEY_1 + 10) % 10) < camList.size())

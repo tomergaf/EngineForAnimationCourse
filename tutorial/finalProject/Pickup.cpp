@@ -37,6 +37,18 @@ void Game::Pickup::RunAction(){
 
 }
 
+Pickup* Game::Pickup::SpawnObject(float xCoordinate, float yCoordinate, float zCoordinate, std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame* scene){
+	Game::Pickup* movingObject = new Game::Pickup{material, model, scene};
+	//move to location
+	scene->root->AddChild(movingObject->model);
+	Eigen::Vector3f posVec{xCoordinate, yCoordinate, zCoordinate};
+	movingObject->model->Translate(posVec);
+	//add to logs
+	Util::DebugPrint(movingObject->name + " added at : " + std::to_string(xCoordinate) + ", " + std::to_string(yCoordinate) + ", " + std::to_string(zCoordinate));
+	return movingObject;
+	
+}
+
 
 void Game::Pickup::Update()
 {
@@ -48,7 +60,9 @@ void Game::Pickup::Update()
         if (elem->name == this->name ) //temp - do not collide with self
             continue;
         if(isActive && CollidingWith(elem))
-            OnCollision();
+            if(elem->partOfSnake){
+                OnCollision();
+            }
     }
     // Move();
     

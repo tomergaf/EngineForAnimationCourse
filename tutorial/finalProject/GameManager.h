@@ -7,16 +7,18 @@
 #include "Movable.h"
 #include "GameObject.h"
 
+
 class Snake;
 
 namespace Game{
+    class SpawnManager;
 
     class GameManager {
 
 
         public:
             
-            GameManager();
+            GameManager(SpawnManager* spawnManager);
 
             void GameStart();
             void GameEnd();
@@ -27,6 +29,8 @@ namespace Game{
             float GetHighScore();
             float GetScore();
             int GetCurrWave();
+
+            SpawnManager* spawnManager;
             std::vector<std::shared_ptr<Game::GameObject>> gameObjects;
             std::shared_ptr<Snake> snake;
 

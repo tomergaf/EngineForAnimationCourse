@@ -33,7 +33,7 @@ class MovingObject: public GameObject{
         float yCoordinate;
         float zCoordinate;
 
-        virtual void  Update() = 0;
+        virtual void  Update() =0;
         virtual void  OnCollision() = 0;
         float speed;
     private:
