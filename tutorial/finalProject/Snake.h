@@ -35,6 +35,7 @@ namespace Game{
             std::shared_ptr<cg3d::AutoMorphingModel> GetModel();
             static std::shared_ptr<Snake> CreateSnake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int links, SnakeGame* scene);
             bool shouldAnimate;
+            bool isAlive;
             std::vector<std::shared_ptr<GameObject>> links;
             //game related
             Eigen::Vector3f GetMoveDirection();
@@ -45,6 +46,8 @@ namespace Game{
 
             void CalcWeight(Eigen::MatrixXd &V, double min_z);
             Eigen::Vector3d moveDir;
+            float currHealth;
+            void InitGameValues();
 
         private:
             
@@ -55,18 +58,15 @@ namespace Game{
             std::shared_ptr<Game::GameManager> gameManager;
 
             float maxHealth;
-            float currHealth;
             float moveSpeed;
             float velocityY;
             float velocityX;
             float velocityZ;
-            bool isAlive;
             bool isColliding;
             float linkLen;
 
 
         
-            void InitGameValues();
 
             void initJoints();
 

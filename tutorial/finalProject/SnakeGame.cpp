@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <vector>
+#include <iterator>
 
 #include "igl/vertex_triangle_adjacency.h"
 #include "igl/per_face_normals.h"
@@ -16,12 +17,14 @@
 #include <igl/opengl/glfw/Viewer.h>
 
 #include "ObjLoader.h"
+#include "Renderer.h"
 #include "AutoMorphingModel.h"
 #include "SceneWithImGui.h"
 #include "CamModel.h"
 #include "Visitor.h"
 #include "IglMeshLoader.h"
 #include "Utility.h"
+#include "Util.h"
 #include "Snake.h"
 #include "MovingObject.h"
 #include "Pickup.h"
@@ -39,6 +42,7 @@
 //TEMP
 #define DECIMATION_MULT 0.5
 #define STAGE_SIZE 15
+#define DEBUG_GUI false
 
 
 using namespace std;
@@ -52,78 +56,117 @@ void SnakeGame::BuildImGui()
     int flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
     bool* pOpen = nullptr;
 
+    if(DEBUG_GUI){
+        ImGui::Begin("Menu", pOpen, flags);
+        ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetWindowSize(ImVec2(0, 0), ImGuiCond_Always);
+        if (ImGui::Button("Load object"))
+            LoadObjectFromFileDialog();
 
-    ImGui::Begin("Menu", pOpen, flags);
-    ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-    ImGui::SetWindowSize(ImVec2(0, 0), ImGuiCond_Always);
-    if (ImGui::Button("Load object"))
-        LoadObjectFromFileDialog();
-
-    ImGui::Text("Camera: ");
-    for (int i = 0; i < camList.size(); i++) {
-        ImGui::SameLine(0);
-        bool selectedCamera = camList[i] == camera;
-        if (selectedCamera)
-            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-        if (ImGui::Button(std::to_string(i + 1).c_str()))
-            SetCamera(i);
-        if (selectedCamera)
-            ImGui::PopStyleColor();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Center"))
-        camera->SetTout(Eigen::Affine3f::Identity());
-    if (pickedModel) {
-        ImGui::Text("Picked model: %s", pickedModel->name.c_str());
+        ImGui::Text("Camera: ");
+        for (int i = 0; i < camList.size(); i++) {
+            ImGui::SameLine(0);
+            bool selectedCamera = camList[i] == camera;
+            if (selectedCamera)
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+            if (ImGui::Button(std::to_string(i + 1).c_str()))
+                SetCamera(i);
+            if (selectedCamera)
+                ImGui::PopStyleColor();
+        }
         ImGui::SameLine();
-        if (ImGui::Button("Drop"))
-            pickedModel = nullptr;
+        if (ImGui::Button("Center"))
+            camera->SetTout(Eigen::Affine3f::Identity());
         if (pickedModel) {
-            if (ImGui::CollapsingHeader("Draw options", ImGuiTreeNodeFlags_DefaultOpen)) {
-                ImGui::Checkbox("Show wireframe", &pickedModel->showWireframe);
-                if (pickedModel->showWireframe) {
-                    ImGui::Text("Wireframe color:");
+            ImGui::Text("Picked model: %s", pickedModel->name.c_str());
+            ImGui::SameLine();
+            if (ImGui::Button("Drop"))
+                pickedModel = nullptr;
+            if (pickedModel) {
+                if (ImGui::CollapsingHeader("Draw options", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGui::Checkbox("Show wireframe", &pickedModel->showWireframe);
+                    if (pickedModel->showWireframe) {
+                        ImGui::Text("Wireframe color:");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("Wireframe color", pickedModel->wireframeColor.data(), ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+                    }
+                    ImGui::Checkbox("Show faces", &pickedModel->showFaces);
+                    ImGui::Checkbox("Show textures", &pickedModel->showTextures);
+                    if (ImGui::Button("Scale down"))
+                        pickedModel->Scale(0.9f);
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("Wireframe color", pickedModel->wireframeColor.data(), ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+                    if (ImGui::Button("Scale up"))
+                        pickedModel->Scale(1.1f);
                 }
-                ImGui::Checkbox("Show faces", &pickedModel->showFaces);
-                ImGui::Checkbox("Show textures", &pickedModel->showTextures);
-                if (ImGui::Button("Scale down"))
-                    pickedModel->Scale(0.9f);
-                ImGui::SameLine();
-                if (ImGui::Button("Scale up"))
-                    pickedModel->Scale(1.1f);
-            }
-            if (ImGui::Button("Dump model mesh data")) {
-                std::cout << "model name: " << pickedModel->name << std::endl;
-                if (pickedModel->meshIndex > 0)
-                    std::cout << "mesh index in use: " << pickedModel->meshIndex;
-                for (auto& mesh: pickedModel->GetMeshList()) {
-                    Eigen::IOFormat simple(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "", "");
-                    std::cout << "mesh name: " << mesh->name << std::endl;
-                    for (int i = 0; i < mesh->data.size(); i++) {
-                        if (mesh->data.size() > 1)
-                            std::cout << "mesh #" << i + 1 << ":" << std::endl;
-                        DumpMeshData(simple, mesh->data[i]);
+                if (ImGui::Button("Dump model mesh data")) {
+                    std::cout << "model name: " << pickedModel->name << std::endl;
+                    if (pickedModel->meshIndex > 0)
+                        std::cout << "mesh index in use: " << pickedModel->meshIndex;
+                    for (auto& mesh: pickedModel->GetMeshList()) {
+                        Eigen::IOFormat simple(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ", ", "", "", "", "");
+                        std::cout << "mesh name: " << mesh->name << std::endl;
+                        for (int i = 0; i < mesh->data.size(); i++) {
+                            if (mesh->data.size() > 1)
+                                std::cout << "mesh #" << i + 1 << ":" << std::endl;
+                            DumpMeshData(simple, mesh->data[i]);
+                        }
                     }
                 }
-            }
-            if (ImGui::Button("Dump model transformations")) {
-                Eigen::IOFormat format(2, 0, ", ", "\n", "[", "]");
-                const Eigen::Matrix4f& transform = pickedModel->GetAggregatedTransform();
-                std::cout << "Tin:" << std::endl << pickedModel->Tin.matrix().format(format) << std::endl
-                          << "Tout:" << std::endl << pickedModel->Tout.matrix().format(format) << std::endl
-                          << "Transform:" << std::endl << transform.matrix().format(format) << std::endl
-                          << "--- Transform Breakdown ---" << std::endl
-                          << "Rotation:" << std::endl << Movable::GetTranslation(transform).matrix().format(format) << std::endl
-                          << "Translation:" << std::endl << Movable::GetRotation(transform).matrix().format(format) << std::endl
-                          << "Rotation x Translation:" << std::endl << Movable::GetTranslationRotation(transform).matrix().format(format)
-                          << std::endl << "Scaling:" << std::endl << Movable::GetScaling(transform).matrix().format(format) << std::endl;
+                if (ImGui::Button("Dump model transformations")) {
+                    Eigen::IOFormat format(2, 0, ", ", "\n", "[", "]");
+                    const Eigen::Matrix4f& transform = pickedModel->GetAggregatedTransform();
+                    std::cout << "Tin:" << std::endl << pickedModel->Tin.matrix().format(format) << std::endl
+                            << "Tout:" << std::endl << pickedModel->Tout.matrix().format(format) << std::endl
+                            << "Transform:" << std::endl << transform.matrix().format(format) << std::endl
+                            << "--- Transform Breakdown ---" << std::endl
+                            << "Rotation:" << std::endl << Movable::GetTranslation(transform).matrix().format(format) << std::endl
+                            << "Translation:" << std::endl << Movable::GetRotation(transform).matrix().format(format) << std::endl
+                            << "Rotation x Translation:" << std::endl << Movable::GetTranslationRotation(transform).matrix().format(format)
+                            << std::endl << "Scaling:" << std::endl << Movable::GetScaling(transform).matrix().format(format) << std::endl;
+                }
             }
         }
-    }
 
-    ImGui::End();
+        ImGui::End();
+    }
+    else{
+        ImGui::Begin("Menu", pOpen, flags);
+        ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetWindowSize(ImVec2(0, 0), ImGuiCond_Always);
+        //Cameras
+        ImGui::Text("Camera: ");
+        for (int i = 0; i < camList.size(); i++) {
+            ImGui::SameLine(0);
+            bool selectedCamera = camList[i] == camera;
+            if (selectedCamera)
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+            if (ImGui::Button(std::to_string(i + 1).c_str()))
+                SetCamera(i);
+            if (selectedCamera)
+                ImGui::PopStyleColor();
+        }
+
+        //Score Text
+        ImGui::Text("High Score: %f", gameManager->GetHighScore());
+        if(!snake->isAlive)
+            ImGui::Text("Game Over, Play Again?");
+        if (ImGui::Button("Play")){
+            gameManager->GameStart();
+        }
+        ImGui::SameLine();
+        if(gameManager->shouldSpawnNextWave){
+            if(ImGui::Button("Next Wave")){
+                gameManager->NextWave();
+            }
+        }
+        if(IsActive()){
+            ImGui::Text("Current Wave: %d", gameManager->GetCurrWave());
+            ImGui::Text("Health: %f", snake->currHealth);
+            ImGui::Text("Score %f", gameManager->GetScore());
+        }   
+
+        ImGui::End();
+    }
 }
 
 void SnakeGame::DumpMeshData(const Eigen::IOFormat& simple, const MeshData& data)
@@ -352,125 +395,47 @@ void SnakeGame::PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh, bool custom)
 
 void SnakeGame::Init(float fov, int width, int height, float near, float far)
 {
-    //init manager
-    float sz = STAGE_SIZE;
-    SpawnManager* spawnManager = new SpawnManager(sz, sz, sz, this);
-    GameManager* gameManagerPtr = new GameManager(spawnManager);
-    gameManager = std::make_shared<GameManager>(*gameManagerPtr);
+    InitManagers();
     //TEMP
-    velInterval =0.1f;
-    animate = true;
-    // create the basic elements of the scene
-    AddChild(root = Movable::Create("root")); // a common (invisible) parent object for all the shapes
-    auto program = std::make_shared<Program>("shaders/basicShader"); 
+
+    auto program = InitSceneEtc();
+
     // auto program = std::make_shared<Program>("shaders/phongShader"); 
-    carbon = std::make_shared<Material>("carbon", program); // default material
-    carbon->AddTexture(0, "textures/carbon.jpg", 2);
 
-    //init scene 
+    // REMOVE THIS LATER - TEXTURES
 
-    auto bricks{std::make_shared<Material>("bricks", program)};
-    auto grass{std::make_shared<Material>("grass", program)};
-    auto snakeMaterial{std::make_shared<Material>(SNAKE_NAME, program)};
-    auto daylight{std::make_shared<Material>("daylight", "shaders/cubemapShader")};
-
-    bricks->AddTexture(0, "textures/bricks.jpg", 2);
-    grass->AddTexture(0, "textures/grass.bmp", 2);
-    snakeMaterial->AddTexture(0, "textures/snake.jpg", 2);
-    daylight->AddTexture(0, "textures/cubemaps/Daylight Box_", 3);
-
-    auto background{Model::Create("background", Mesh::Cube(), daylight)};
-    AddChild(background);
-
-    //init snake object
-    auto snakeMesh{ObjLoader::MeshFromObjFiles<std::string>("snakeMesh", "data/snake3.obj")};
-    snakeMesh->data.push_back(IglLoader::MeshFromFiles("cyl_igl","data/xcylinder.obj")->data[0]);
-    auto snakeModel{Model::Create("snake", snakeMesh, snakeMaterial)};
-
-    auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
-        return 0;
-    };
-
-    std::shared_ptr<AutoMorphingModel> autoSnake = AutoMorphingModel::Create(*snakeModel, morphFunc);
-    autoSnake->showWireframe = false;
-    // autoSnake->RotateByDegree(90, Eigen::Vector3f(0,1,0));
-    snake = Game::Snake::CreateSnake(snakeMaterial, autoSnake, 16, this);
-    gameManager->snake = snake;
-    root->AddChild(snake->autoSnake);
-
-    // create the camera objects
-
-    //First Person Camera
-    camList.resize(camList.capacity());
-    camList[0] = Camera::Create("camera0", fov, float(width) / float(height), near, far);
-    camList[0]->Translate(-1, Axis::X);
-    camList[0]->RotateByDegree(90, Axis::Y);
-    snake->autoSnake->AddChild(camList[0]);
-    
-    // top down camera
-    for (int i = 1; i < camList.size(); i++) {
-        auto camera = Camera::Create("", fov, double(width) / height, near, far);
-        auto camMesh{IglLoader::MeshFromFiles("camMesh", "data/camera.obj")};
-        auto model = Model::Create(std::string("camera") + std::to_string(i), camMesh, bricks);
-        // auto model = ObjLoader::ModelFromObj(std::string("camera") + std::to_string(i), "data/camera.obj", carbon);
-        ShowObject(model, false);
-        root->AddChild(camList[i] = CamModel::Create(*camera, *model));
-        // snake->autoSnake->AddChild(camList[i] = CamModel::Create(*camera, *model));
-    }
+    // carbon = std::make_shared<Material>("carbon", program); // default material
+    // carbon->AddTexture(0, "textures/carbon.jpg", 2);
+    // auto grass{std::make_shared<Material>("grass", program)};
+    // grass->AddTexture(0, "textures/grass.bmp", 2);
 
 
-    camList[1]->Translate(50, Axis::Y);
-    camList[1]->RotateByDegree(-90, Axis::X);
-    camera = camList[1];
-    
-    //TEMP remove these
-    cube1 = Model::Create("cube1", Mesh::Cube(), bricks);
-    cube2 = Model::Create("cube2", Mesh::Cube(), bricks);
-    cube1->Translate({-3, 0, -5});
-    cube2->Translate({3, 0, -5});
-    
-    // TEMP item setup
-    auto sphereMesh{IglLoader::MeshFromFiles("sphere1", "data/sphere.obj")};
-    sphere1 = Model::Create("sphere1", sphereMesh, bricks);
-    auto spherePointer = new Game::Pickup(bricks, sphere1, this);
-    sphereObj = std::make_shared<Pickup>(*spherePointer);
-    interactables.push_back(sphereObj);
-    sphere2 = Model::Create("sphere2", sphereMesh, bricks);
-    auto spherePointer2 = new Game::HealthPickup(bricks, sphere2, this);
-    sphereObj2 = std::make_shared<HealthPickup>(*spherePointer2);
-    interactables.push_back(sphereObj2);
-    auto sphere3 = Model::Create("sphere3", sphereMesh, bricks);
-    interactables.push_back(std::make_shared<Obstacle>(*(Obstacle::SpawnObject(1, 1, 1, bricks, sphere3, this))));
-    // interactables.push_back(std::make_shared<Obstacle>(*(new Game::Obstacle(bricks, sphere3, this))));
-//    
+    //init BG 
+    InitBackground();
+    // init snake
+    InitSnake(program);
+    //init cameras
+    InitCameras(fov, width, height, near, far);
     
     // TEMP Collisions setup
-    auto collisionCube1Mesh {IglLoader::MeshFromFiles("collisioncube1mesh", "data/cube.off")};
-	auto collisionCube2Mesh {IglLoader::MeshFromFiles("collisioncube2mesh", "data/cube.off")};
-    collisionCube1 = Model::Create("collisioncube1", collisionCube1Mesh, bricks);
-    collisionCube2 = Model::Create("collisioncube2", collisionCube2Mesh, bricks);
-    collisionCube1->showFaces = false;
-    collisionCube2->showFaces = false;
-    collisionCube1->showWireframe = true;
-    collisionCube2->showWireframe = true;
-    collisionCube1->isHidden = true;
-    collisionCube2->isHidden = true;
 
+    auto bricks{std::make_shared<Material>("bricks", program)};
+    bricks->AddTexture(0, "textures/bricks.jpg", 2);
+    auto collisionCube1Mesh {IglLoader::MeshFromFiles("collisioncube1mesh", "data/cube.off")};
+	// auto collisionCube2Mesh {IglLoader::MeshFromFiles("collisioncube2mesh", "data/cube.off")};
+    collisionCube1 = Model::Create("collisioncube1", collisionCube1Mesh, bricks);
+    // collisionCube2 = Model::Create("collisioncube2", collisionCube2Mesh, bricks);
+    collisionCube1->showFaces = false;
+    // collisionCube2->showFaces = false;
+    collisionCube1->showWireframe = true;
+    // collisionCube2->showWireframe = true;
+    collisionCube1->isHidden = true;
+    // collisionCube2->isHidden = true;
 
 	snake->GetModel()->AddChild(collisionCube1); //add collision cube as child so it moves and rotates with parent
-	sphereObj->model->AddChild(collisionCube2); 
+	// sphereObj->model->AddChild(collisionCube2); 
     
-
-    sphere1->Translate({-2, 0, 0});
-    sphere2->Translate({-6, 0, 0});
-    sphere3->Translate({-8, 0, 0});
-
-    gameManager->GameStart();
-    root->AddChildren({cube1, cube2, sphere1, sphere2, sphere3});
-
-    background->Scale(120, Axis::XYZ);
-    background->SetPickable(false);
-    background->SetStatic();
+    
 }
 
 void SnakeGame::AnimateUntilCollision(std::shared_ptr<Game::Snake> snakeModel){
@@ -489,6 +454,98 @@ void SnakeGame::AnimateUntilCollision(std::shared_ptr<Game::Snake> snakeModel){
 	}
 }
 
+void SnakeGame::RemoveInteractable(Game::MovingObject* interactable){
+    auto it = std::find_if(interactables.begin(), interactables.end(), [&](std::shared_ptr<MovingObject> p){return p.get()==interactable;});
+    if (it != interactables.end())
+        interactables.erase(it);
+
+}
+
+void SnakeGame::InitManagers(){
+     //init managers
+
+    float sz = STAGE_SIZE;
+    SpawnManager* spawnManager = new SpawnManager(sz, sz, sz, this);
+    GameManager* gameManagerPtr = new GameManager(spawnManager);
+    this->gameManager = std::make_shared<GameManager>(*gameManagerPtr);
+}
+
+void SnakeGame::InitBackground(){
+    // init BG
+    auto daylight{std::make_shared<Material>("daylight", "shaders/cubemapShader")};
+    daylight->AddTexture(0, "textures/cubemaps/Daylight Box_", 3);
+    auto background{Model::Create("background", Mesh::Cube(), daylight)};
+    AddChild(background);
+    background->Scale(120, Axis::XYZ);
+    background->SetPickable(false);
+    background->SetStatic();
+}
+
+std::shared_ptr<cg3d::Program> SnakeGame::InitSceneEtc(){
+    // initialize common values and return a shader program to be used 
+    this->velInterval =0.1f;
+    this->animate = false;
+    // create the basic elements of the scene
+    AddChild(this->root = Movable::Create("root")); // a common (invisible) parent object for all the shapes
+    auto program = std::make_shared<Program>("shaders/basicShader");
+    return program; 
+}
+
+void SnakeGame::InitCameras(float fov, int width, int height, float near, float far){
+    // create the camera objects
+
+    //First Person Camera
+    camList.resize(camList.capacity());
+    camList[0] = Camera::Create("camera0", fov, float(width) / float(height), near, far);
+    camList[0]->Translate(-1, Axis::X);
+    camList[0]->RotateByDegree(90, Axis::Y);
+    snake->autoSnake->AddChild(camList[0]);
+    
+    // top down camera
+    for (int i = 1; i < camList.size(); i++) {
+        camList[i] = Camera::Create("camera" + std::to_string(i), fov, double(width) / height, near, far);
+        root->AddChild(camList[i]);
+    }
+
+    //move top down camera in to position and rotate it downwards
+    camList[1]->Translate(50, Axis::Y);
+    camList[1]->RotateByDegree(-90, Axis::X);
+    this->camera = camList[1];
+    
+}
+
+void SnakeGame::InitSnake(std::shared_ptr<cg3d::Program> program){
+   //init snake object
+    auto snakeMaterial{std::make_shared<Material>(SNAKE_NAME, program)};
+    snakeMaterial->AddTexture(0, "textures/snake.jpg", 2);
+    auto snakeMesh{ObjLoader::MeshFromObjFiles<std::string>("snakeMesh", "data/snake3.obj")};
+    snakeMesh->data.push_back(IglLoader::MeshFromFiles("cyl_igl","data/xcylinder.obj")->data[0]);
+    auto snakeModel{Model::Create(SNAKE_NAME, snakeMesh, snakeMaterial)};
+
+    auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
+        return 0;
+    };
+
+    std::shared_ptr<AutoMorphingModel> autoSnake = AutoMorphingModel::Create(*snakeModel, morphFunc);
+    autoSnake->showWireframe = false;
+    // autoSnake->RotateByDegree(90, Eigen::Vector3f(0,1,0));
+    this->snake = Game::Snake::CreateSnake(snakeMaterial, autoSnake, 16, this);
+    //TEMP jsut to move snake a bit
+    AnimateUntilCollision(this->snake);
+
+    gameManager->snake = this->snake;
+    root->AddChild(snake->autoSnake);
+}
+
+
+void SnakeGame::InitPtrs(){
+    int sz = root->children.size();
+    for (int i=0 ; i< sz ; i++){
+        auto child = root->children.at(0);
+        root->RemoveChild(child);
+    }
+}
+
 void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model)
 {
     Scene::Update(p, proj, view, model);
@@ -505,12 +562,20 @@ void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eige
         // Eigen::Vector3f dir = sphereObj->MoveBezier();
         if(ticks % 5 == 0){
             AnimateUntilCollision(this->snake);
-            for (auto & elem : interactables){
-
+            for (int i = 0; i < interactables.size(); i++) {
+                auto elem = interactables.at(i);
                 elem->Update();
-            }
+            }       
+            // for (auto & elem : interactables){
+
+            //     elem->Update();
+            // }
         }
+        //ADD A FLAG TO WHEN A WAVE ENDS AND A NEW INE SHYKD SOAWN INSTEAD OF SPAWNING IT
     }
+    // if(gameManager->shouldSpawnNextWave)
+    //     gameManager->NextWave();
+    // Util::DebugPrint(std::to_string(root->children.size()));
 }
 
 void SnakeGame::AddInteractable(std::shared_ptr<Game::MovingObject> interactable)
@@ -548,6 +613,16 @@ void SnakeGame::StopMotion(){
 	snake->StopMoving();
 }
 
+void SnakeGame::RestartScene(){
+    InitPtrs();
+    const int DISPLAY_WIDTH = 800;
+    const int DISPLAY_HEIGHT = 800;
+    const float CAMERA_ANGLE = 45.0f;
+    const float NEAR = 0.1f;
+    const float FAR = 120.0f;
+    this->Init(CAMERA_ANGLE, DISPLAY_WIDTH, DISPLAY_HEIGHT, NEAR, FAR);
+    SetCamera(1);
+}
 
 void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scancode, int action, int mods)
 {
@@ -570,6 +645,9 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
 		
 		if (key == GLFW_KEY_RIGHT)
 			snake->moveDir = Eigen::Vector3d(snake->GetMoveSpeed(), 0, 0);
+		if (key == GLFW_KEY_R){
+           RestartScene();
+        }
 		
         
         

@@ -4,6 +4,7 @@
 #include  "Pickup.h"
 #include  "Model.h"
 #include  "HealthPickup.h"
+#include  "GameManager.h"
 #include  "Util.h"
 #include "IglMeshLoader.h"
 
@@ -15,6 +16,7 @@ SpawnManager::SpawnManager(float xSize, float ySize, float zSize, SnakeGame* sce
     this->ySize = ySize;
     this->zSize = zSize;
     this->scene = scene;
+    this->activePickups = 0;
     InitAssets();
 }
 
@@ -33,19 +35,46 @@ void SpawnManager::InitAssets(){
     healthMesh = IglLoader::MeshFromFiles("cylMesh", "data/xcylinder.obj");
 }
 
+void SpawnManager::SpawnWave(int wave){
+    // set amount of each spawns according to wave num
+    this->activePickups = 0;
+    int pickups = wave + 2;
+    int obstacles = wave ;
+    int health = wave %2 == 1 ? 1 : 0; // every odd level
+
+    //TEMP - FOR DEBUG
+    // int pickups = 1;
+    // int obstacles = 1 ;
+    // int health =  1; // every odd level
+    SpawnWave(pickups, obstacles, health);
+    //set speed of movemnt maybe?
+    //log this
+    Util::DebugPrint("Manager Spawning...");
+
+}
 void SpawnManager::SpawnWave(int pickups, int obstacles, int health)
 {
     for(int i = 0; i<pickups; i++){
         SpawnPickupRandom(PICKUP);
     }
     for(int i = 0; i<obstacles; i++){
-        //change to spawnObstacle
         SpawnPickupRandom(OBSTACLE);
     }
     for(int i = 0; i<health; i++){
-        //change to spanwHealth
         SpawnPickupRandom(HEALTHPICKUP);
     }
+}
+
+void SpawnManager::PickupDestroyed(MovingObject* interactable)
+{
+    activePickups = activePickups-1>=0 ? activePickups-1 : 0;
+    // remove from interactables list
+    //  scene->RemoveInteractable(interactable);
+    if(activePickups==0){
+        Util::DebugPrint("Spawn Manager detected no more pickups, alerting Game Manager");
+        scene->gameManager->shouldSpawnNextWave=true;
+    }
+
 }
 
 std::shared_ptr<cg3d::Model> SpawnManager::CreatePickupModel()
@@ -80,22 +109,24 @@ void SpawnManager::SpawnPickup(float x, float y, float z, InteractableObjects ty
         case PICKUP:
         //TODO - update manager
         model = CreatePickupModel();
+        model->isHidden = false;
         pickup = std::make_shared<Pickup>(*Pickup::SpawnObject(x, y, z, pickupMaterial, model, scene));
+        // update the manager
+        activePickups ++;
         break;
 
         case OBSTACLE:
         model = CreateObstacleModel();
-        pickup = std::make_shared<Obstacle>(*Obstacle::SpawnObject(x, y, z, pickupMaterial, model, scene));
+        pickup = std::make_shared<Obstacle>(*Obstacle::SpawnObject(x, y, z, obstacleMaterial, model, scene));
         break;
 
         case HEALTHPICKUP:
         model = CreateHealthPickupModel();
-        pickup = std::make_shared<HealthPickup>(*HealthPickup::SpawnObject(x, y, z, pickupMaterial, model, scene));
+        pickup = std::make_shared<HealthPickup>(*HealthPickup::SpawnObject(x, y, z, healthMaterial, model, scene));
         break;
     }
     scene->AddInteractable(pickup);
 
-    // update the manager
 }
 
 

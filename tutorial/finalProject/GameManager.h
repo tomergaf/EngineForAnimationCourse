@@ -33,6 +33,8 @@ namespace Game{
             SpawnManager* spawnManager;
             std::vector<std::shared_ptr<Game::GameObject>> gameObjects;
             std::shared_ptr<Snake> snake;
+            SnakeGame* scene;
+            bool shouldSpawnNextWave;
 
         private:
 

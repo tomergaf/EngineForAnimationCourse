@@ -40,18 +40,6 @@ void GameObject::InitCollider()
 }
 
 
-//  std::shared_ptr<GameObject> GameObject::SpawnObject(float xCoordinate, float yCoordinate, float zCoordinate, std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame* scene){
-// 	//create object
-// 	std::shared_ptr<GameObject> gameObject{new Game::GameObject{material, model, scene}};
-// 	//move to location
-// 	scene->root->AddChild(gameObject);
-// 	gameObject->model->Translate(Eigen::Vector3f{xCoordinate, yCoordinate, zCoordinate});
-// 	//add to logs
-// 	Util::DebugPrint(gameObject.name + " added at : " + std::to_string(Eigen::Vector3f{xCoordinate, yCoordinate, zCoordinate}));
-// 	return gameObject;
-	
-// }
-
 void GameObject::DrawBox(Eigen::AlignedBox<double, 3>& box, int color,std::shared_ptr<cg3d::Model> model){
     //TEMP JSUT FOR DEBUG
 	Eigen::RowVector3d colorVector;

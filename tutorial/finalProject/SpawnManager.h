@@ -18,10 +18,14 @@ class SpawnManager{
         };
 
         SpawnManager(float xSize, float ySize, float zSize, SnakeGame* scene);
+        void SpawnWave(int wave);
         void SpawnWave(int pickups, int obstacles, int health);
+        void PickupDestroyed(MovingObject* interactable);
 
         float xSize, ySize, zSize;
         SnakeGame* scene;
+
+        int activePickups;
     private:
         void InitAssets();
 

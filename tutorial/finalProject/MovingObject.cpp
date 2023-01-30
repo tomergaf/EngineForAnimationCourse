@@ -77,13 +77,14 @@ Eigen::Vector3f Game::MovingObject::MoveBezier()
 
 void Game::MovingObject::Move()
 {
-	
-	std::random_device randDevice;
-	std::mt19937       randGenerator(randDevice());
-	std::uniform_int_distribution<int> distributeZ(1, 10);
-	std::uniform_int_distribution<int> distribute(1 , 10);
+	float min = 1;
+	float max = 10;
+	float distXY = Util::GenerateRandomInRange(min, max);
+	float distZ = Util::GenerateRandomInRange(min, max);
 	// TEMP
-	model->Translate((Eigen::Vector3f(distribute(randGenerator), distribute(randGenerator), distributeZ(randGenerator))).normalized()*0.0001*speed) ;
+	Eigen::Vector3f moveVec = Eigen::Vector3f(distXY, distXY, distZ);
+	Util::PrintVector(moveVec);
+	model->Translate((moveVec).normalized()*0.0001*speed) ;
 	
 }
 

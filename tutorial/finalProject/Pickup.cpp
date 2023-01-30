@@ -4,6 +4,7 @@
 #include "SnakeGame.h"
 #include "GameManager.h"
 #include "GameObject.h"
+#include "SpawnManager.h"
 #include "Util.h"
 
 
@@ -34,6 +35,11 @@ void Game::Pickup::RunAction(){
     // update score
     scene->gameManager->IncreaseScore(score);
     // notify game manager
+    // log this
+    Util::DebugPrint("Pickup " + name + " Destroyed");
+    scene->gameManager->spawnManager->PickupDestroyed(this);
+    //remove from objects
+
 
 }
 
@@ -56,12 +62,14 @@ void Game::Pickup::Update()
     if(!AdvanceTime()) //if not time to move or is not active, do not proceed
         return;
     // proceed to check collisions with other objects
-    for(auto & elem : scene->gameManager->gameObjects){
+    for (int i = 0; i < scene->gameManager->gameObjects.size(); i++) {
+            auto elem = scene->gameManager->gameObjects.at(i);
         if (elem->name == this->name ) //temp - do not collide with self
             continue;
         if(isActive && CollidingWith(elem))
             if(elem->partOfSnake){
                 OnCollision();
+                return;
             }
     }
     // Move();
