@@ -40,7 +40,7 @@
 #include "GLFW/glfw3.h"
 
 //TEMP
-#define DECIMATION_MULT 0.5
+#define DECIMATION_MULT 0.03
 #define STAGE_SIZE 15
 #define DEBUG_GUI false
 
@@ -537,7 +537,6 @@ void SnakeGame::InitSnake(std::shared_ptr<cg3d::Program> program){
     root->AddChild(snake->autoSnake);
 }
 
-
 void SnakeGame::InitPtrs(){
     int sz = root->children.size();
     for (int i=0 ; i< sz ; i++){
@@ -562,10 +561,10 @@ void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eige
         // Eigen::Vector3f dir = sphereObj->MoveBezier();
         if(ticks % 5 == 0){
             AnimateUntilCollision(this->snake);
-            for (int i = 0; i < interactables.size(); i++) {
-                auto elem = interactables.at(i);
-                elem->Update();
-            }       
+            }
+        for (int i = 0; i < interactables.size(); i++) {
+            auto elem = interactables.at(i);
+            elem->Update();       
             // for (auto & elem : interactables){
 
             //     elem->Update();
@@ -633,8 +632,10 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
         //     SetActive(!IsActive());
 
         // Temp Motion
-		if (key == GLFW_KEY_SPACE)
+		if (key == GLFW_KEY_SPACE){
+            animate = !animate;
 			StopMotion();
+        }
 		if (key == GLFW_KEY_UP)
 			snake->moveDir = Eigen::Vector3d(0, snake->GetMoveSpeed(), 0);
 		if (key == GLFW_KEY_DOWN)

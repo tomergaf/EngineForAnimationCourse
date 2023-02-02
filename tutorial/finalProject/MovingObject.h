@@ -17,15 +17,22 @@ class MovingObject: public GameObject{
         void  DrawCurve();
         void  Move();
         void SetTimeOut();
-        Eigen::Vector3f  MoveBezier();
+        Eigen::Vector3f  GenerateBezierVec();
+        Eigen::Vector3f  GenerateMoveVec();
 
-        Eigen::Matrix4f M;
-        Eigen::Matrix <float, 4, 3 > curvePoints;
-        Eigen::Matrix <float, 4, 3 > MG_Result;
+        Eigen::Vector3f  moveVec;
+        // Eigen::Matrix4f M;
+        Eigen::Matrix4d M;
+        // Eigen::Matrix <float, 4, 3 > curvePoints;
+        Eigen::Matrix <double, 4, 3 > curvePoints;
+        Eigen::Matrix <double, 4, 3 > MG;
+        // Eigen::Matrix <float, 4, 3 > MG;
 
-        Eigen::RowVector4f T;
+        // Eigen::RowVector4f T;
+        Eigen::RowVector4d T;
         std::vector<Eigen::Vector3d> spawnLocations;
-        Eigen::Vector3f currentPosition;
+        Eigen::Vector3d currentPosition;
+        // Eigen::Vector3f currentPosition;
 
         bool moveBackwards;
         float t;

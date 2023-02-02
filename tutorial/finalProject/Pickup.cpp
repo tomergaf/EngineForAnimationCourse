@@ -59,20 +59,26 @@ Pickup* Game::Pickup::SpawnObject(float xCoordinate, float yCoordinate, float zC
 void Game::Pickup::Update()
 {
     
-    if(!AdvanceTime()) //if not time to move or is not active, do not proceed
-        return;
+    if(AdvanceTime()){
     // proceed to check collisions with other objects
-    for (int i = 0; i < scene->gameManager->gameObjects.size(); i++) {
-            auto elem = scene->gameManager->gameObjects.at(i);
-        if (elem->name == this->name ) //temp - do not collide with self
-            continue;
-        if(isActive && CollidingWith(elem))
-            if(elem->partOfSnake){
-                OnCollision();
-                return;
-            }
-    }
-    // Move();
+        for (int i = 0; i < scene->gameManager->gameObjects.size(); i++) {
+                auto elem = scene->gameManager->gameObjects.at(i);
+            if (elem->name == this->name ) //temp - do not collide with self
+                continue;
+            if(isActive && CollidingWith(elem))
+                if(elem->partOfSnake){
+                    OnCollision();
+                    return;
+                }
+        }
+    } //if not time to move or is not active, do not proceed
+    // change direction every random interval of time
+    int randModifier = Util::GenerateRandomInRange(30, 60);
+    if(ticks%(cycles*randModifier) == 0)
+        // GenerateMoveVec();
+        GenerateBezierVec();
+    if(isActive)
+        Move();
     
     
 }

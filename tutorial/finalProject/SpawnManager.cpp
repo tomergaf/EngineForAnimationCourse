@@ -79,7 +79,13 @@ void SpawnManager::PickupDestroyed(MovingObject* interactable)
 
 std::shared_ptr<cg3d::Model> SpawnManager::CreatePickupModel()
 {
-    return Model::Create("Pickup", pickupMesh, pickupMaterial);
+    auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
+        return 0;
+        // return model->GetMesh()->data.size()-1;
+    };
+    auto model  = Model::Create("Pickup", pickupMesh, pickupMaterial);
+    // auto model  = Model::Create("Pickup", pickupMesh, healthMaterial);
+    return AutoMorphingModel::Create(*model, morphFunc);
 }
 
 std::shared_ptr<cg3d::Model> SpawnManager::CreateObstacleModel()

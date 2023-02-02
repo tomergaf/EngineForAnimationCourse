@@ -14,7 +14,8 @@ GameObject::GameObject(std::shared_ptr<cg3d::Material> material, std::shared_ptr
     this->scene = scene;
     this->material = material;
     this->model = model;
-    this->name = model->name + "-" + std::to_string(scene->gameManager->gameObjects.size());
+	this->index = scene->gameManager->gameObjects.size();
+    this->name = model->name + "-" + std::to_string(this->index);
     InitCollider();
     this->isActive = true;
     this->timeout = 0;
@@ -257,7 +258,7 @@ bool GameObject::AdvanceTime(){
         timeout--;
     if(timeout == 0)
         Reactivate();
-    return (ticks % 50 ==0 );
+    return (ticks % cycles == 0 );
         
 }
 

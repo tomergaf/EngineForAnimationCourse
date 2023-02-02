@@ -34,6 +34,7 @@ namespace Game{
             std::string name;
             SnakeGame* scene;
             
+            int index;
             bool isActive;
             bool permaGone;
             bool partOfSnake;
