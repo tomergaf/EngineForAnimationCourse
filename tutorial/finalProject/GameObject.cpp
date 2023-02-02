@@ -2,6 +2,8 @@
 #include "GameManager.h"
 #include "GameManager.h"
 #include "Utility.h"
+#include "Util.h"
+#include "SnakeGame.h"
 
 #define GENERIC_CYCLES 50
 
@@ -12,12 +14,14 @@ GameObject::GameObject(std::shared_ptr<cg3d::Material> material, std::shared_ptr
     this->scene = scene;
     this->material = material;
     this->model = model;
-    this->name = model->name + "-" + std::to_string(scene->gameManager->gameObjects.size());
+	this->index = scene->gameManager->gameObjects.size();
+    this->name = model->name + "-" + std::to_string(this->index);
     InitCollider();
     this->isActive = true;
     this->timeout = 0;
     this->permaGone = false;
     this->cycles = GENERIC_CYCLES;
+	this->partOfSnake = (material->name)==SNAKE_NAME;
     this->thisShared = std::make_shared<GameObject>(*this);
     this->scene->gameManager->gameObjects.push_back(thisShared);
 }
@@ -35,6 +39,7 @@ void GameObject::InitCollider()
 
 
 }
+
 
 void GameObject::DrawBox(Eigen::AlignedBox<double, 3>& box, int color,std::shared_ptr<cg3d::Model> model){
     //TEMP JSUT FOR DEBUG
@@ -253,7 +258,7 @@ bool GameObject::AdvanceTime(){
         timeout--;
     if(timeout == 0)
         Reactivate();
-    return (ticks % 50 ==0 );
+    return (ticks % cycles == 0 );
         
 }
 

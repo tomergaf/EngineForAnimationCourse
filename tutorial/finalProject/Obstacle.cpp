@@ -10,12 +10,14 @@
 
 
 #define OBSTACLE_CYCLES 50
+#define DAMAGE 5
 
 namespace Game{
 
 Game::Obstacle::Obstacle(std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame* scene) : Game::MovingObject(material, model, scene)
 {
     this->cycles = OBSTACLE_CYCLES;
+    this->damage = DAMAGE;
 }
 
 void Game::Obstacle::OnCollision()
@@ -24,6 +26,18 @@ void Game::Obstacle::OnCollision()
     RunAction();
 
     
+}
+
+Obstacle* Game::Obstacle::SpawnObject(float xCoordinate, float yCoordinate, float zCoordinate, std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame* scene){
+    //create object
+	Game::Obstacle* movingObject = new Game::Obstacle{material, model, scene};
+	//move to location
+	scene->root->AddChild(movingObject->model);
+	Eigen::Vector3f posVec{xCoordinate, yCoordinate, zCoordinate};
+	movingObject->model->Translate(posVec);
+	//add to logs
+	Util::DebugPrint(movingObject->name + " added at : " + std::to_string(xCoordinate) + ", " + std::to_string(yCoordinate) + ", " + std::to_string(zCoordinate));
+	return movingObject;
 }
 
 void Game::Obstacle::RunAction(){
@@ -47,11 +61,14 @@ void Game::Obstacle::Update()
     if(!AdvanceTime()) //if not time to move or is not active, do not proceed
         return;
     // proceed to check collisions with other objects
-    for(auto & elem : scene->gameManager->gameObjects){
+   for (int i = 0; i < scene->gameManager->gameObjects.size(); i++) {
+            auto elem = scene->gameManager->gameObjects.at(i);
         if (elem->name == this->name ) //temp - do not collide with self
             continue;
         if(isActive && CollidingWith(elem))
-            OnCollision();
+            if(elem->partOfSnake){
+                OnCollision();
+            }
     }
     // Move();
     

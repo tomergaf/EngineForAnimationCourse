@@ -1,14 +1,19 @@
 #include "GameManager.h"
 #include "Util.h"
 #include "Snake.h"
+#include "SpawnManager.h"
 
 
 
 namespace Game{
 //TODO implement json configuration loading
 
-    GameManager::GameManager() 
+    GameManager::GameManager(SpawnManager* spawnManager) 
     {
+        this->spawnManager = spawnManager;
+        shouldSpawnNextWave = false;
+        this->scene = spawnManager->scene;
+        SetHighScore(0);
         InitValues();
     }
 
@@ -22,8 +27,13 @@ namespace Game{
     void GameManager::GameStart()
     {
         // init values that are not highscore
-        InitValues();    
+        Util::DebugPrint("Game Starting...");
+        InitValues(); 
+        scene->SetActive();  
+        scene->snake->InitGameValues();  
         // signal wave manager
+        NextWave();
+        //log this
     }
 
     void GameManager::GameEnd()
@@ -32,12 +42,23 @@ namespace Game{
         // update high score?
         Util::DebugPrint("Score is: " + std::to_string(score));
         // see score and high score
+        scene->SetActive(false);
         // pause everything
     }
 
     void GameManager::NextWave()
     {
         currWave++;
+        //TEMP change to last wave number
+        if(currWave == 6){
+            Util::DebugPrint("Congratulations! you have reached the end!");
+            GameEnd();
+        }
+        else{
+            Util::DebugPrint("Wave Started: " + std::to_string(GetCurrWave()));
+            spawnManager->SpawnWave(GetCurrWave());
+        }
+        shouldSpawnNextWave=false;
         // signal wave manager?
     }
 
@@ -47,6 +68,7 @@ namespace Game{
         GameEnd();
         // init values
         InitValues();
+        
         // reset position to pre-wave 1
         // snake->ResetSnake();
         // launch menu?
