@@ -76,7 +76,7 @@ void Game::Pickup::Update()
     int randModifier = Util::GenerateRandomInRange(30, 60);
     if(ticks%(cycles*randModifier) == 0)
         // GenerateMoveVec();
-        GenerateBezierVec();
+        GenerateBezierCurve();
     if(isActive)
         Move();
     

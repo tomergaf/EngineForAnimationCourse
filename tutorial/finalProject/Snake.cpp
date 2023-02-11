@@ -3,6 +3,7 @@
 #include <per_face_normals.h>
 #include <read_triangle_mesh.h>
 #include <utility>
+#include <string.h>
 #include <vector>
 #include "GLFW/glfw3.h"
 #include "Mesh.h"
@@ -137,7 +138,9 @@ void Snake::InitSnake(){
     // links.push_back(std::make_shared<Game::GameObject>(*link));
     links.push_back(std::make_shared<Game::GameObject>(*link));
     cyls[0]->SetCenter(Eigen::Vector3f(-linkLen,0,0));
+    // cyls[0]->RotateByDegree(90, Eigen::Vector3f(0,1,0));
     autoSnake->AddChild(cyls[0]);
+    // scene->root->AddChild(cyls[0]);
     // add first link to game objects list
 
     //TEMP
@@ -148,7 +151,9 @@ void Snake::InitSnake(){
         cyls[i]->Scale(scaleFactor,cg3d::Movable::Axis::X);   
         cyls[i]->Translate(1.6f*scaleFactor,cg3d::Movable::Axis::X);
         cyls[i]->SetCenter(Eigen::Vector3f(-linkLen,0,0));
+        // cyls[i]->RotateByDegree(90, Eigen::Vector3f(0,1,0));
         cyls[i-1]->AddChild(cyls[i]);   
+        // scene->root->AddChild(cyls[i]);   
         //TEMP
         link = new GameObject(snakeProgram, cyls[i], scene);
         link->partOfSnake = true;
@@ -274,8 +279,12 @@ void Snake::Skinning(Eigen::Vector3d t) {
     for (int i = 0; i < numOfLinks+ 1; i++) 
         vC[i] = vT[i];
 
-    // for (int i =1; i < numOfLinks + 1; i++)
-    //     links[i]->model->Translate(CT.cast<float>().row(2*i-1)*0.01f);
+    for (int i =1; i < numOfLinks + 1; i++){
+        Eigen::MatrixX3f system = links[i]->model->GetRotation();
+        // links[i]->model->Translate(CT.cast<float>().row(2*i-1)*0.0001f);
+        links[i]->model->TranslateInSystem(system ,CT.cast<float>().row(2*i-1)*0.0001f);
+
+    }
 
 	
 	
@@ -308,6 +317,7 @@ void Snake::Move(Eigen::Vector3d t){
 	for (int i = 1; i < numOfLinks + 1; i++) {
 		quat = Eigen::Quaterniond::FromTwoVectors(vC[i] - vC[i - 1], vT[i] - vC[i - 1]);
         auto euler = quat.toRotationMatrix();
+		// links[i]->model->RotateInSystem(links[i-1]->model->GetRotation(),euler.cast<float>());
 		links[i]->model->Rotate(euler.cast<float>());
 		// Eigen::Matrix3d mat =links[i]->model->GetTranslation();
         // links[i]->model->RotateByDegree	

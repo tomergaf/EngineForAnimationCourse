@@ -483,6 +483,7 @@ void SnakeGame::InitBackground(){
 
 std::shared_ptr<cg3d::Program> SnakeGame::InitSceneEtc(){
     // initialize common values and return a shader program to be used 
+    this->core().animation_max_fps = 30;
     this->velInterval =0.1f;
     this->animate = false;
     // create the basic elements of the scene
@@ -529,6 +530,7 @@ void SnakeGame::InitSnake(std::shared_ptr<cg3d::Program> program){
     std::shared_ptr<AutoMorphingModel> autoSnake = AutoMorphingModel::Create(*snakeModel, morphFunc);
     autoSnake->showWireframe = false;
     // autoSnake->RotateByDegree(90, Eigen::Vector3f(0,1,0));
+    autoSnake->SetCenter(Eigen::Vector3f(-0.8f,0,0));
     this->snake = Game::Snake::CreateSnake(snakeMaterial, autoSnake, 16, this);
     //TEMP jsut to move snake a bit
     AnimateUntilCollision(this->snake);
@@ -547,6 +549,7 @@ void SnakeGame::InitPtrs(){
 
 void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model)
 {
+    Eigen::MatrixX3f system = (snake->GetModel()->GetRotation()) ;
     Scene::Update(p, proj, view, model);
     p.SetUniform4f("lightColor", 0.8f, 0.3f, 0.0f, 0.5f);
     p.SetUniform4f("Kai", 1.0f, 0.3f, 0.6f, 1.0f);
@@ -554,7 +557,8 @@ void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eige
     p.SetUniform1f("specular_exponent", 5.0f);
     p.SetUniform4f("light_position", 0.0, 15.0f, 0.0, 1.0f);
     if (animate) {
-        
+        //Temp Snake Motion
+        snake->GetModel()->TranslateInSystem(system,Eigen::Vector3f(0,0,-0.01f));
         ticks+=1;
         //TEMP
         // sphereObj->DrawCurve();
@@ -628,6 +632,7 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
+        Eigen::MatrixX3f system = camera->GetRotation().transpose();
         // if (key == GLFW_KEY_SPACE)
         //     SetActive(!IsActive());
 
@@ -636,32 +641,38 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
             animate = !animate;
 			StopMotion();
         }
-		if (key == GLFW_KEY_UP)
-			snake->moveDir = Eigen::Vector3d(0, snake->GetMoveSpeed(), 0);
-		if (key == GLFW_KEY_DOWN)
-            snake->moveDir = Eigen::Vector3d(0, -1*snake->GetMoveSpeed(), 0);
+		// if (key == GLFW_KEY_UP)
+		// 	snake->moveDir = Eigen::Vector3d(0, snake->GetMoveSpeed(), 0);
+		// if (key == GLFW_KEY_DOWN)
+        //     snake->moveDir = Eigen::Vector3d(0, -1*snake->GetMoveSpeed(), 0);
 		
-		if (key == GLFW_KEY_LEFT)
-			snake->moveDir = Eigen::Vector3d(-1*snake->GetMoveSpeed(), 0, 0);
+		// if (key == GLFW_KEY_LEFT)
+		// 	snake->moveDir = Eigen::Vector3d(-1*snake->GetMoveSpeed(), 0, 0);
 		
-		if (key == GLFW_KEY_RIGHT)
-			snake->moveDir = Eigen::Vector3d(snake->GetMoveSpeed(), 0, 0);
+		// if (key == GLFW_KEY_RIGHT)
+		// 	snake->moveDir = Eigen::Vector3d(snake->GetMoveSpeed(), 0, 0);
 		if (key == GLFW_KEY_R){
            RestartScene();
         }
 		
         
         
-        // if (key == GLFW_KEY_UP) 
-        //     snake->GetModel()->RotateByDegree(3, Axis::X);
-		// 	// UpdateYVelocity(true);
-		// if (key == GLFW_KEY_DOWN) 
-		// 	UpdateYVelocity(false);
-		// if (key == GLFW_KEY_LEFT)
-        //     snake->GetModel()->RotateByDegree(3, Axis::Y);
-		// 	// UpdateXVelocity(true);
-		// if (key == GLFW_KEY_RIGHT) 
-		// 	UpdateXVelocity(false);
+        if (key == GLFW_KEY_UP) 
+            snake->GetModel()->RotateByDegree(3, Axis::Z);
+            // snake->GetModel()->RotateInSystem(system, 0.1f, Axis::Z);
+			// UpdateYVelocity(true);
+		if (key == GLFW_KEY_DOWN) 
+            snake->GetModel()->RotateByDegree(-3, Axis::Z);
+            // snake->GetModel()->RotateInSystem(system, -0.1f, Axis::Z);
+			// UpdateYVelocity(false);
+		if (key == GLFW_KEY_LEFT)
+            snake->GetModel()->RotateByDegree(3, Axis::Y);
+            // snake->GetModel()->RotateInSystem(system, 0.1f, Axis::Y);
+			// UpdateXVelocity(true);
+		if (key == GLFW_KEY_RIGHT) 
+            snake->GetModel()->RotateByDegree(-3, Axis::Y);
+            // snake->GetModel()->RotateInSystem(system, -0.1f, Axis::Y);
+			// UpdateXVelocity(false);
         // keys 1-9 are objects 1-9 (objects[0] - objects[8]), key 0 is object 10 (objects[9])
         if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
             if (int index; (index = (key - GLFW_KEY_1 + 10) % 10) < camList.size())

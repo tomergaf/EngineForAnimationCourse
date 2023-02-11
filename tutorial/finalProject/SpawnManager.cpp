@@ -43,9 +43,9 @@ void SpawnManager::SpawnWave(int wave){
     int health = wave %2 == 1 ? 1 : 0; // every odd level
 
     //TEMP - FOR DEBUG
-    // int pickups = 1;
-    // int obstacles = 1 ;
-    // int health =  1; // every odd level
+    pickups = 0;
+    obstacles = 0 ;
+    health =  0; // every odd level
     SpawnWave(pickups, obstacles, health);
     //set speed of movemnt maybe?
     //log this
@@ -80,8 +80,8 @@ void SpawnManager::PickupDestroyed(MovingObject* interactable)
 std::shared_ptr<cg3d::Model> SpawnManager::CreatePickupModel()
 {
     auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
-        return 0;
-        // return model->GetMesh()->data.size()-1;
+        // return 0;
+        return model->GetMesh()->data.size()-1;
     };
     auto model  = Model::Create("Pickup", pickupMesh, pickupMaterial);
     // auto model  = Model::Create("Pickup", pickupMesh, healthMaterial);
