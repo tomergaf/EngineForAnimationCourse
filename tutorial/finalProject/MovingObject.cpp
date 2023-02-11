@@ -6,7 +6,7 @@
 
 
 
-#define SPEED 10
+#define SPEED 5
 #define DAMPENER 0.0007
 #define TIMEOUT 1000
 
@@ -20,9 +20,10 @@ Game::MovingObject::MovingObject(std::shared_ptr<cg3d::Material> material, std::
 	speed = SPEED;
 	this->moveBackwards = false;
 	this->t = 0;
-	// this->moveVec = GenerateMoveVec();
+	InitCurveModel();
+    this->GenerateBezierCurve();
 	this->moveVec = GenerateBezierVec();
-    // this->GenerateBezierCurve();
+	// this->moveVec = GenerateMoveVec();
 }
 
 // Game::MovingObject* Game::MovingObject::SpawnObject(float xCoordinate, float yCoordinate, float zCoordinate, std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame *scene)
@@ -39,7 +40,7 @@ Game::MovingObject::MovingObject(std::shared_ptr<cg3d::Material> material, std::
 // }
 
 void Game::MovingObject::GenerateBezierCurve() {
-
+	t=0;
 	Eigen::Vector3f pRow1;
 	Eigen::Vector3f pRow2;
 	Eigen::Vector3f pRow3;
@@ -50,9 +51,15 @@ void Game::MovingObject::GenerateBezierCurve() {
 	float minX = -3;
 	float minY = -3;
 	float minZ = -3;
-	float maxX = 5;
+	float maxX = 3;
 	float maxY = 3;
-	float maxZ = 5;
+	float maxZ = 3;
+	// float minX = 0;
+	// float minY = -1;
+	// float minZ = -5;
+	// float maxX = 4;
+	// float maxY = 5;
+	// float maxZ = 5;
 
 	// float randX = Util::GenerateRandomInRange(minX,maxX);
 	// float randY = Util::GenerateRandomInRange(minY,maxY);
@@ -79,12 +86,12 @@ void Game::MovingObject::GenerateBezierCurve() {
 
 	MG = M * curvePoints;
 
-	// DrawCurve(); 
+	// DrawPoints(); 
 }
 
 Eigen::Vector3f Game::MovingObject::GenerateBezierVec()
 {
-	GenerateBezierCurve();
+	// GenerateBezierCurve();
 
  	T[0] = powf(t, 3);
 	T[1] = powf(t, 2);
@@ -95,6 +102,7 @@ Eigen::Vector3f Game::MovingObject::GenerateBezierVec()
 	// model->Translate(currentPosition.cast<float>());
 
 	double dampener = DAMPENER;
+	// Eigen::Vector3f moveVec = currentPosition.cast<float>().normalized() * dampener * speed;
 	Eigen::Vector3f moveVec = currentPosition.cast<float>().normalized() * dampener * speed;
 	this->moveVec = moveVec;
 	return(moveVec);
@@ -102,7 +110,6 @@ Eigen::Vector3f Game::MovingObject::GenerateBezierVec()
 
 Eigen::Vector3f Game::MovingObject::GenerateMoveVec()
 {
-
 	float min = -10;
 	float max = 10;
 	float distXY = Util::GenerateRandomInRange(min, max);
@@ -117,8 +124,10 @@ Eigen::Vector3f Game::MovingObject::GenerateMoveVec()
 }
 
 void Game::MovingObject::Move()
-{
+{	
+	GenerateBezierVec();
 	model->Translate(this->moveVec);
+	t+= 0.3*DAMPENER * speed;
 	
 }
 
@@ -127,56 +136,86 @@ void Game::MovingObject::SetTimeOut(){
     timeout = TIMEOUT;
 }
 
+void Game::MovingObject::InitCurveModel(){
+	auto modelShader = std::make_shared<cg3d::Program>("shaders/basicShader"); 
+    auto obstacleMaterial = std::make_shared<cg3d::Material>("bricks", modelShader);
+	this->curveModel = cg3d::Model::Create("Curve", cg3d::Mesh::Cube(), obstacleMaterial);
+	curveModel->showFaces = false;
+	curveModel->showWireframe = true;
+	curveModel->isHidden = true;
+	// curveModel->mode = 3;
+	curveModel->SetTransform(model->GetAggregatedTransform());
+	scene->root->AddChild(curveModel);
+	curveModel->SetPickable(true);
 
+    
+}
 
-void Game::MovingObject::DrawCurve() {
+void Game::MovingObject::DrawPoints() {
 	// Eigen::Vector3d drawingColor = Eigen::RowVector3d(1, 1, 1);
-	Eigen::Matrix3d drawingColor = Eigen::Matrix3d::Ones();
-	int meshIdx = index;
-	Eigen::RowVector3d points; // Vertices of the mesh (#V x 3)
-    Eigen::RowVector3d colors; // Faces of the mesh (#F x 3)
-    Eigen::RowVector3d edges; // One normal per vertex    
-	Eigen::MatrixXd verts ;
-	Eigen::MatrixXi faces ;
-	for (int i = 0; i < 3; i++){
-		// this->scene->data(index).add_edges(curvePoints.row(i).cast<double>(), curvePoints.row(i + 1).cast<double>(), drawingColor);
-		// this->scene->data(index).add_edges(curvePoints.row(i), curvePoints.row(i+1), drawingColor);
-		verts = model->GetMeshList()[0]->data[0].vertices;
-		verts.resize(verts.rows()+3, verts.cols());
-		verts.row(verts.rows()-3+i) = curvePoints.row(i);
-		// scene->data().add_edges(curvePoints.row(i), curvePoints.row(i+1), drawingColor);
-		faces = model->GetMeshList()[0]->data[0].faces;
-		faces.resize(faces.rows()+3, faces.cols());
-		faces.row(faces.rows()-3+i) = curvePoints.row(i).cast<int>();
-		// scene->data().add_edges(curvePoints.row(i), curvePoints.row(i+1), drawingColor);
-		// Util::PrintVector(curvePoints.row(i).cast<float>());
-		// this->scene->data().add_edges(curvePoints.row(i), curvePoints.row(i + 1), drawingColor);
-		// model->AddOverlay(data, false);
-		// points = curvePoints.row(i), curvePoints.row(i+1), drawingColor);
+	Eigen::Matrix3d color = Eigen::Matrix3d::Ones();
+	auto mesh = curveModel->GetMeshList();    
+	Eigen::MatrixXd verts = mesh[0]->data[0].vertices;
+	Eigen::MatrixXd VN, T;
+	Eigen::MatrixXi faces = mesh[0]->data[0].faces ;
+	faces.resize(3, 3); // 
+    verts.resize(4, 3); // 4 vertices
+    mesh[0]->data.clear();
+    mesh[0]->data.size();
+	for (int i = 0; i <= 3; i++){
+		verts.row(i) = curvePoints.row(i);
 		
 	}
-	// model->showWireframe = true;
-	faces = model->GetMeshList()[0]->data[0].faces;
-	Eigen::MatrixXd VN;
+	faces.row(0) = Eigen::Vector3i(0, 1, 1);
+	faces.row(1) = Eigen::Vector3i(1, 2, 2);
+	faces.row(2) = Eigen::Vector3i(2, 3, 3);
 	igl::per_vertex_normals(verts, faces, VN);
-	Eigen::MatrixXd TC = Eigen::MatrixXd::Zero(verts.rows(), 2);
-	// model->GetMeshList()[0]->data.emplace(model->GetMeshList()[0]->data.begin(), cg3d::MeshData{verts, faces, VN, TC });
-	model->GetMeshList()[0]->data.push_back(cg3d::MeshData{verts, faces, VN, TC });
-	// for (int i = 0; i < 3; i++){
-	// 	// this->scene->data(index).add_edges(curvePoints.row(i).cast<double>(), curvePoints.row(i + 1).cast<double>(), drawingColor);
-	// 	// this->scene->data(index).add_edges(curvePoints.row(i), curvePoints.row(i+1), drawingColor);
-	// 	cg3d::OverlayData data{curvePoints.row(i), drawingColor, curvePoints.row(i+1)};
-	// 	Util::PrintVector(curvePoints.row(i).cast<float>());
-	// 	model->AddOverlay(data, true);
-	// 	// points = curvePoints.row(i), curvePoints.row(i+1), drawingColor);
-		
-	// 	// this->scene->data(index).add_edges(curvePoints.row(i), curvePoints.row(i + 1), drawingColor);
-	// }
-		// model->mode =1;
+    T = Eigen::MatrixXd::Zero(verts.rows(), 2);
 
-	scene->data().line_width = 25;
-	scene->data().show_lines = true;
-	scene->data().show_overlay_depth = true;
+    mesh[0]->data.push_back({ verts, faces, VN, T }); // push new cube mesh to draw
+    curveModel->SetMeshList(mesh);
+	// curveModel->viewerDataListPerMesh[0][0].clear_points();
+	// for (int i = 0; i < 3; i++){
+	// 	curveModel->viewerDataListPerMesh[0][0].add_points(curvePoints.row(i), color);
+	// 	curveModel->viewerDataListPerMesh[0][0].add_edges(curvePoints.row(i),curvePoints.row(i+1), color);
+		
+	// }
+	// // scene->data().set_points(curvePoints, color);
+	// curveModel->viewerDataListPerMesh[0][0].show_lines=3;
+	// curveModel->viewerDataListPerMesh[0][0].show_overlay=3;
+	// curveModel->viewerDataListPerMesh[0][0].show_overlay_depth=3;
+	// curveModel->viewerDataListPerMesh[0][0].show_texture=3;
+    curveModel->meshIndex = mesh[0]->data.size()-1; // use last mesh pushed
+	curveModel->SetTransform(model->GetAggregatedTransform());
+	curveModel->isHidden = false;
+	
+}
+
+void Game::MovingObject::DrawCurve() {
+	// Eigen::Vector3d color = Eigen::RowVector3d(1, 1, 1);
+	// Eigen::Matrix3d color = Eigen::Matrix3d::Ones();
+	// auto mesh = curveModel->GetMeshList();    
+	// Eigen::MatrixXd verts = mesh[0]->data[0].vertices;
+	// Eigen::MatrixXd VN, T;
+	// Eigen::MatrixXi faces = mesh[0]->data[0].faces ;
+	// faces.resize(99, 3); // 
+    // verts.resize(100, 3); // 4 vertices
+	// verts.row(0) = curvePoints.row(0);
+	// for (int i = 1; i <= 99; i++){
+	// 	verts.row(i) = curvePoints.row(i);
+		
+	// }
+	// faces.row(0) = Eigen::Vector3i(0, 1, 1);
+	// faces.row(1) = Eigen::Vector3i(1, 2, 2);
+	// faces.row(2) = Eigen::Vector3i(2, 3, 3);
+	// igl::per_vertex_normals(verts, faces, VN);
+    // T = Eigen::MatrixXd::Zero(verts.rows(), 2);
+
+    // mesh[0]->data.push_back({ verts, faces, VN, T }); // push new cube mesh to draw
+    // curveModel->SetMeshList(mesh);
+    // curveModel->meshIndex = mesh[0]->data.size()-1; // use last mesh pushed
+	// curveModel->SetTransform(model->GetAggregatedTransform());
+	// curveModel->isHidden = false;
 }
 	
 	

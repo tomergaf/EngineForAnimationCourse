@@ -15,9 +15,11 @@ class MovingObject: public GameObject{
         float GetSpeed();
         void  GenerateBezierCurve();
         void  DrawCurve();
-        void  Move();
+        void DrawPoints();
+        void Move();
         void SetTimeOut();
-        Eigen::Vector3f  GenerateBezierVec();
+        void InitCurveModel();
+        Eigen::Vector3f GenerateBezierVec();
         Eigen::Vector3f  GenerateMoveVec();
 
         Eigen::Vector3f  moveVec;
@@ -44,6 +46,7 @@ class MovingObject: public GameObject{
         virtual void  OnCollision() = 0;
         float speed;
     private:
+        std::shared_ptr<cg3d::Model> curveModel;
 
 };
 

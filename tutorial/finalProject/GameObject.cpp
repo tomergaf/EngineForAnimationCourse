@@ -28,8 +28,8 @@ GameObject::GameObject(std::shared_ptr<cg3d::Material> material, std::shared_ptr
 
 void GameObject::InitCollider()
 {
-    if(model->GetMeshList()[0]->data.size()<2 && model->GetMeshList()[0]->name != "snakeMesh")
-        SnakeGame::PreDecimateMesh(model->GetMeshList()[0], false);
+    // if(model->GetMeshList()[0]->data.size()<2 && model->GetMeshList()[0]->name != "snakeMesh")
+    //     SnakeGame::PreDecimateMesh(model->GetMeshList()[0], false);
     Eigen::MatrixXd Ve;
 	Eigen::MatrixXi Fa;
           
