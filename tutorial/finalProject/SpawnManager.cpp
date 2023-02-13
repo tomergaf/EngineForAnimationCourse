@@ -43,9 +43,9 @@ void SpawnManager::SpawnWave(int wave){
     int health = wave %2 == 1 ? 1 : 0; // every odd level
 
     //TEMP - FOR DEBUG
-    pickups = 0;
-    obstacles = 0 ;
-    health =  0; // every odd level
+    // pickups = 0;
+    // obstacles = 0 ;
+    // health =  0; // every odd level
     SpawnWave(pickups, obstacles, health);
     //set speed of movemnt maybe?
     //log this

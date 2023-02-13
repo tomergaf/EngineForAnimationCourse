@@ -446,8 +446,8 @@ void SnakeGame::AnimateUntilCollision(std::shared_ptr<Game::Snake> snakeModel){
 		// moveVector = {-1*moveVector(0),1*moveVector(1),1*moveVector(2)}*snakeModel->GetMoveSpeed();
 		// moveVector = snakeModel->GetMoveDirection() * snakeModel->GetMoveSpeed();
 		// snakeModel->autoSnake->Translate(moveVector);
-        // moveVector = Vector3d{0,0,0.04};
-        moveVector = snake->moveDir;
+        moveVector = Vector3d{-0.01,0,0};
+        // moveVector = snake->moveDir;
 		snake->Skinning(moveVector);
 		// snake->Skinning(moveVector.cast<double>());
         // debug_print(moveVector);
@@ -529,14 +529,16 @@ void SnakeGame::InitSnake(std::shared_ptr<cg3d::Program> program){
 
     std::shared_ptr<AutoMorphingModel> autoSnake = AutoMorphingModel::Create(*snakeModel, morphFunc);
     autoSnake->showWireframe = false;
-    // autoSnake->RotateByDegree(90, Eigen::Vector3f(0,1,0));
-    autoSnake->SetCenter(Eigen::Vector3f(-0.8f,0,0));
+    autoSnake->RotateByDegree(90, Eigen::Vector3f(0,1,0));
+    // autoSnake->SetCenter(Eigen::Vector3f(-0.8f,0,0));
+    // autoSnake->SetCenter(Eigen::Vector3f(0.8f,0,0));
+    root->AddChild(autoSnake);
     this->snake = Game::Snake::CreateSnake(snakeMaterial, autoSnake, 16, this);
     //TEMP jsut to move snake a bit
     AnimateUntilCollision(this->snake);
 
     gameManager->snake = this->snake;
-    root->AddChild(snake->autoSnake);
+    // root->AddChild(snake->autoSnake);
 }
 
 void SnakeGame::InitPtrs(){
@@ -549,7 +551,8 @@ void SnakeGame::InitPtrs(){
 
 void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model)
 {
-    Eigen::MatrixX3f system = (snake->GetModel()->GetRotation()) ;
+    // Eigen::MatrixX3f system = (snake->GetModel()->GetRotation()) ;
+    // Eigen::MatrixX3f system = camera->GetRotation().transpose();
     Scene::Update(p, proj, view, model);
     p.SetUniform4f("lightColor", 0.8f, 0.3f, 0.0f, 0.5f);
     p.SetUniform4f("Kai", 1.0f, 0.3f, 0.6f, 1.0f);
@@ -558,13 +561,13 @@ void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eige
     p.SetUniform4f("light_position", 0.0, 15.0f, 0.0, 1.0f);
     if (animate) {
         //Temp Snake Motion
-        snake->GetModel()->TranslateInSystem(system,Eigen::Vector3f(0,0,-0.01f));
+        // snake->GetModel()->TranslateInSystem(system,Eigen::Vector3f(0,0,0.001f));
         ticks+=1;
         //TEMP
         // sphereObj->DrawCurve();
         // Eigen::Vector3f dir = sphereObj->MoveBezier();
         if(ticks % 5 == 0){
-            AnimateUntilCollision(this->snake);
+            // AnimateUntilCollision(this->snake);
             }
         for (int i = 0; i < interactables.size(); i++) {
             auto elem = interactables.at(i);
@@ -632,7 +635,7 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
-        Eigen::MatrixX3f system = camera->GetRotation().transpose();
+        Eigen::MatrixX3f system = camList[0]->GetRotation().transpose();
         // if (key == GLFW_KEY_SPACE)
         //     SetActive(!IsActive());
 
@@ -658,20 +661,20 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
         
         
         if (key == GLFW_KEY_UP) 
-            snake->GetModel()->RotateByDegree(3, Axis::Z);
-            // snake->GetModel()->RotateInSystem(system, 0.1f, Axis::Z);
+            // snake->GetModel()->RotateByDegree(3, Axis::Z);
+            snake->GetModel()->RotateInSystem(system, 0.1f, Axis::X);
 			// UpdateYVelocity(true);
 		if (key == GLFW_KEY_DOWN) 
-            snake->GetModel()->RotateByDegree(-3, Axis::Z);
-            // snake->GetModel()->RotateInSystem(system, -0.1f, Axis::Z);
+            // snake->GetModel()->RotateByDegree(-3, Axis::Z);
+            snake->GetModel()->RotateInSystem(system, -0.1f, Axis::X);
 			// UpdateYVelocity(false);
 		if (key == GLFW_KEY_LEFT)
-            snake->GetModel()->RotateByDegree(3, Axis::Y);
-            // snake->GetModel()->RotateInSystem(system, 0.1f, Axis::Y);
+            // snake->GetModel()->RotateByDegree(3, Axis::Y);
+            snake->GetModel()->RotateInSystem(system, 0.1f, Axis::Y);
 			// UpdateXVelocity(true);
 		if (key == GLFW_KEY_RIGHT) 
-            snake->GetModel()->RotateByDegree(-3, Axis::Y);
-            // snake->GetModel()->RotateInSystem(system, -0.1f, Axis::Y);
+            // snake->GetModel()->RotateByDegree(-3, Axis::Y);
+            snake->GetModel()->RotateInSystem(system, -0.1f, Axis::Y);
 			// UpdateXVelocity(false);
         // keys 1-9 are objects 1-9 (objects[0] - objects[8]), key 0 is object 10 (objects[9])
         if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
