@@ -2,6 +2,7 @@
 #include "Util.h"
 #include "Snake.h"
 #include "SpawnManager.h"
+#include "SoundManager.h"
 
 
 
@@ -43,7 +44,9 @@ namespace Game{
         Util::DebugPrint("Score is: " + std::to_string(score));
         // see score and high score
         scene->SetActive(false);
+
         // pause everything
+        SoundManager::PlayGameEndSound();
     }
 
     void GameManager::NextWave()

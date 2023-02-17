@@ -6,7 +6,7 @@
 #include "GameObject.h"
 #include "SpawnManager.h"
 #include "Util.h"
-
+#include "SoundManager.h"
 
 
 #define PICKUP_CYCLES 50
@@ -39,6 +39,7 @@ void Game::Pickup::RunAction(){
     Util::DebugPrint("Pickup " + name + " Destroyed");
     scene->gameManager->spawnManager->PickupDestroyed(this);
     //remove from objects
+    SoundManager::PlayPickupSound();
 
 
 }

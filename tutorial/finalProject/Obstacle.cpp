@@ -6,6 +6,7 @@
 #include "GameObject.h"
 #include "Util.h"
 #include "Snake.h"
+#include "SoundManager.h"
 
 
 
@@ -49,8 +50,7 @@ void Game::Obstacle::RunAction(){
     // update health
     //tell snake its colliding
     scene->gameManager->snake->GetHit(damage);
-    
-    // notify game manager
+    SoundManager::PlayHitSound();    
 
 }
 

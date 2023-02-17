@@ -21,7 +21,7 @@ void AnimationVisitor::Visit(Model* model){
     Eigen::MatrixX3f system = model->GetRotation().transpose();
     if(scene->IsActive()){
         if(model->name == std::string("snake"))
-            model->TranslateInSystem(system, Eigen::Vector3f(-0.06f,0,0));
+            model->TranslateInSystem(system, Eigen::Vector3f(-0.1f,0,0));
     }
 }
 

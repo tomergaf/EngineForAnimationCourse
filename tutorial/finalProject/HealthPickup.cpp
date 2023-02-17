@@ -4,6 +4,8 @@
 #include "Snake.h"
 #include "Pickup.h"
 #include "Util.h"
+#include "SoundManager.h"
+
 
 #define HEALTH_CYCLES 50
 
@@ -37,6 +39,7 @@ void Game::HealthPickup::RunAction(){
     // update health
     scene->gameManager->snake->IncreaseHealth(healthValue);
     // notify game manager
+    SoundManager::PlayPickupSound();
 
 }
 }
