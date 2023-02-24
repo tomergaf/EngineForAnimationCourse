@@ -76,7 +76,6 @@ void Game::Pickup::Update()
     // change direction every random interval of time
     int randModifier = Util::GenerateRandomInRange(30, 60);
     if(ticks%(cycles*randModifier) == 0)
-        // GenerateMoveVec();
         GenerateBezierCurve();
     if(isActive)
         Move();

@@ -396,19 +396,9 @@ void SnakeGame::PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh, bool custom)
 void SnakeGame::Init(float fov, int width, int height, float near, float far)
 {
     InitManagers();
-    //TEMP
 
     auto program = InitSceneEtc();
-
     // auto program = std::make_shared<Program>("shaders/phongShader"); 
-
-    // REMOVE THIS LATER - TEXTURES
-
-    // carbon = std::make_shared<Material>("carbon", program); // default material
-    // carbon->AddTexture(0, "textures/carbon.jpg", 2);
-    // auto grass{std::make_shared<Material>("grass", program)};
-    // grass->AddTexture(0, "textures/grass.bmp", 2);
-
 
     //init BG 
     InitBackground();
@@ -504,13 +494,15 @@ void SnakeGame::InitCameras(float fov, int width, int height, float near, float 
     
     // top down camera
     for (int i = 1; i < camList.size(); i++) {
-        camList[i] = Camera::Create("camera" + std::to_string(i), fov, double(width) / height, near, far);
-        root->AddChild(camList[i]);
+        camList[i] = Camera::Create("camera" + std::to_string(i), fov*0.7, double(width) / height, near, far);
+        // root->AddChild(camList[i]);
+        snake->GetModel()->AddChild(camList[i]);
     }
 
     //move top down camera in to position and rotate it downwards
     camList[1]->Translate(50, Axis::Y);
     camList[1]->RotateByDegree(-90, Axis::X);
+    camList[1]->RotateByDegree(90, Axis::Z);
     this->camera = camList[1];
     
 }
@@ -531,10 +523,8 @@ void SnakeGame::InitSnake(std::shared_ptr<cg3d::Program> program){
     autoSnake->showWireframe = false;
     autoSnake->RotateByDegree(90, Eigen::Vector3f(0,1,0));
     // autoSnake->SetCenter(Eigen::Vector3f(-0.8f,0,0));
-    // autoSnake->SetCenter(Eigen::Vector3f(0.8f,0,0));
     root->AddChild(autoSnake);
     this->snake = Game::Snake::CreateSnake(snakeMaterial, autoSnake, 16, this);
-    //TEMP jsut to move snake a bit
     AnimateUntilCollision(this->snake);
 
     gameManager->snake = this->snake;
@@ -551,8 +541,6 @@ void SnakeGame::InitPtrs(){
 
 void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model)
 {
-    // Eigen::MatrixX3f system = (snake->GetModel()->GetRotation()) ;
-    // Eigen::MatrixX3f system = camera->GetRotation().transpose();
     Scene::Update(p, proj, view, model);
     p.SetUniform4f("lightColor", 0.8f, 0.3f, 0.0f, 0.5f);
     p.SetUniform4f("Kai", 1.0f, 0.3f, 0.6f, 1.0f);
@@ -560,28 +548,15 @@ void SnakeGame::Update(const Program& p, const Eigen::Matrix4f& proj, const Eige
     p.SetUniform1f("specular_exponent", 5.0f);
     p.SetUniform4f("light_position", 0.0, 15.0f, 0.0, 1.0f);
     if (animate) {
-        //Temp Snake Motion
-        // snake->GetModel()->TranslateInSystem(system,Eigen::Vector3f(0,0,0.001f));
         ticks+=1;
-        //TEMP
-        // sphereObj->DrawCurve();
-        // Eigen::Vector3f dir = sphereObj->MoveBezier();
         if(ticks % 5 == 0){
             // AnimateUntilCollision(this->snake);
             }
         for (int i = 0; i < interactables.size(); i++) {
             auto elem = interactables.at(i);
             elem->Update();       
-            // for (auto & elem : interactables){
-
-            //     elem->Update();
-            // }
         }
-        //ADD A FLAG TO WHEN A WAVE ENDS AND A NEW INE SHYKD SOAWN INSTEAD OF SPAWNING IT
     }
-    // if(gameManager->shouldSpawnNextWave)
-    //     gameManager->NextWave();
-    // Util::DebugPrint(std::to_string(root->children.size()));
 }
 
 void SnakeGame::AddInteractable(std::shared_ptr<Game::MovingObject> interactable)
@@ -636,8 +611,6 @@ void SnakeGame::KeyCallback(Viewport* _viewport, int x, int y, int key, int scan
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
         Eigen::MatrixX3f system = camList[0]->GetRotation().transpose();
-        // if (key == GLFW_KEY_SPACE)
-        //     SetActive(!IsActive());
 
         // Temp Motion
 		if (key == GLFW_KEY_SPACE){

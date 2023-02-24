@@ -42,8 +42,6 @@ Obstacle* Game::Obstacle::SpawnObject(float xCoordinate, float yCoordinate, floa
 }
 
 void Game::Obstacle::RunAction(){
-     // dont hide
-    // model->isHidden=true;
     //kill and timeout
     permaGone = false;
     SetTimeOut();

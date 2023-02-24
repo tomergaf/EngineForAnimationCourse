@@ -39,20 +39,17 @@ namespace Game{
 
     void GameManager::GameEnd()
     {
-        // launch menu
         // update high score?
         Util::DebugPrint("Score is: " + std::to_string(score));
-        // see score and high score
+        // set score and high score
         scene->SetActive(false);
-
-        // pause everything
         SoundManager::PlayGameEndSound();
     }
 
     void GameManager::NextWave()
     {
         currWave++;
-        //TEMP change to last wave number
+        // change to last wave number
         if(currWave == 6){
             Util::DebugPrint("Congratulations! you have reached the end!");
             GameEnd();
@@ -61,8 +58,8 @@ namespace Game{
             Util::DebugPrint("Wave Started: " + std::to_string(GetCurrWave()));
             spawnManager->SpawnWave(GetCurrWave());
         }
+        // signal wave manager
         shouldSpawnNextWave=false;
-        // signal wave manager?
     }
 
     void GameManager::Restart()
@@ -72,9 +69,6 @@ namespace Game{
         // init values
         InitValues();
         
-        // reset position to pre-wave 1
-        // snake->ResetSnake();
-        // launch menu?
     }
 
     void GameManager::IncreaseScore(float amount)
