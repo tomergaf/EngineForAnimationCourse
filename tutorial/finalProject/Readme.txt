@@ -22,6 +22,7 @@ Collisions are handled primarily in the GameObject Class
   - Health Pickups: Restore health
   - Obstacles: Reduce health
 
+
 - Object Movement
  - Bezier:
  Objects can move in a random bezier curve plotted by random points chosen in a uniform distribution.
