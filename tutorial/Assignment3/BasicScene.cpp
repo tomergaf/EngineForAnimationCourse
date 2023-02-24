@@ -151,13 +151,6 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
 
 
 void BasicScene::ikCyclicCoordinateDecentMethod(std::shared_ptr<AutoMorphingModel> target){
-	//TODO - change var names
-    //TODO - make sure this works
-    //TODO - validate magics - angles and such
-    //TODO - remove wrapping if
-    //TODO - delete init rotation if it does not help
-    //TODO - Remove debugs
-    //TODO - implement ALL callback and constraints in the document (ie arm doesnt brake when moving or rotating)
 
     if (shouldAnimateCCD) {
 		Eigen::Vector3f targetDes = target->GetAggregatedTransform().block<3,1>(0,3); //get cube source
@@ -483,7 +476,6 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
             case GLFW_KEY_SPACE:
                 shouldAnimateCCD = ! shouldAnimateCCD;
 
-                //todo
 
         }
     }
