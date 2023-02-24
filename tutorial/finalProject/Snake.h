@@ -72,7 +72,6 @@ namespace Game{
 
             void RestartSnake();
 
-            // TEMP - change later
             typedef
                 std::vector<Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond> >
                 RotationList;
