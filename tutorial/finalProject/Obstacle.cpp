@@ -6,6 +6,7 @@
 #include "GameObject.h"
 #include "Util.h"
 #include "Snake.h"
+#include "SoundManager.h"
 
 
 
@@ -41,16 +42,13 @@ Obstacle* Game::Obstacle::SpawnObject(float xCoordinate, float yCoordinate, floa
 }
 
 void Game::Obstacle::RunAction(){
-     // dont hide
-    // model->isHidden=true;
     //kill and timeout
     permaGone = false;
     SetTimeOut();
     // update health
     //tell snake its colliding
     scene->gameManager->snake->GetHit(damage);
-    
-    // notify game manager
+    SoundManager::PlayHitSound();    
 
 }
 

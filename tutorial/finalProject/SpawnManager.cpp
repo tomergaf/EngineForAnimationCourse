@@ -43,11 +43,10 @@ void SpawnManager::SpawnWave(int wave){
     int health = wave %2 == 1 ? 1 : 0; // every odd level
 
     //TEMP - FOR DEBUG
-    pickups = 0;
-    obstacles = 0 ;
-    health =  0; // every odd level
+    // pickups = 0;
+    // obstacles = 0 ;
+    // health =  0; // every odd level
     SpawnWave(pickups, obstacles, health);
-    //set speed of movemnt maybe?
     //log this
     Util::DebugPrint("Manager Spawning...");
 
@@ -69,7 +68,6 @@ void SpawnManager::PickupDestroyed(MovingObject* interactable)
 {
     activePickups = activePickups-1>=0 ? activePickups-1 : 0;
     // remove from interactables list
-    //  scene->RemoveInteractable(interactable);
     if(activePickups==0){
         Util::DebugPrint("Spawn Manager detected no more pickups, alerting Game Manager");
         scene->gameManager->shouldSpawnNextWave=true;
@@ -80,11 +78,9 @@ void SpawnManager::PickupDestroyed(MovingObject* interactable)
 std::shared_ptr<cg3d::Model> SpawnManager::CreatePickupModel()
 {
     auto morphFunc = [](Model* model, cg3d::Visitor* visitor) {
-        // return 0;
         return model->GetMesh()->data.size()-1;
     };
     auto model  = Model::Create("Pickup", pickupMesh, pickupMaterial);
-    // auto model  = Model::Create("Pickup", pickupMesh, healthMaterial);
     return AutoMorphingModel::Create(*model, morphFunc);
 }
 

@@ -21,7 +21,7 @@
     private:
         void BuildImGui() override;
         std::shared_ptr<cg3d::Material> carbon;
-        bool animate;
+        // bool animate;
         std::vector<std::shared_ptr<cg3d::Camera>> camList{2};
         std::vector<std::shared_ptr<Game::MovingObject>> interactables;
         std::shared_ptr<Game::MovingObject> sphereObj,sphereObj2;
@@ -56,7 +56,7 @@
         void ViewportSizeCallback(cg3d::Viewport* _viewport) override;
         static void PreDecimateMesh(std::shared_ptr<cg3d::Mesh> mesh, bool custom);
         void ShowObject(std::shared_ptr<cg3d::Model> model, bool dir);
-        inline bool IsActive() const { return animate; };
+        // inline bool IsActive() const { return animate; };
         inline void SetActive(bool _isActive = true) { animate = _isActive; }
 
     private:

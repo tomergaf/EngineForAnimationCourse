@@ -6,7 +6,7 @@
 #include "GameObject.h"
 #include "SpawnManager.h"
 #include "Util.h"
-
+#include "SoundManager.h"
 
 
 #define PICKUP_CYCLES 50
@@ -39,6 +39,7 @@ void Game::Pickup::RunAction(){
     Util::DebugPrint("Pickup " + name + " Destroyed");
     scene->gameManager->spawnManager->PickupDestroyed(this);
     //remove from objects
+    SoundManager::PlayPickupSound();
 
 
 }
@@ -75,7 +76,6 @@ void Game::Pickup::Update()
     // change direction every random interval of time
     int randModifier = Util::GenerateRandomInRange(30, 60);
     if(ticks%(cycles*randModifier) == 0)
-        // GenerateMoveVec();
         GenerateBezierCurve();
     if(isActive)
         Move();

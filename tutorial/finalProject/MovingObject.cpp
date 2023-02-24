@@ -8,7 +8,7 @@
 
 #define SPEED 5
 #define DAMPENER 0.0007
-#define TIMEOUT 1000
+#define TIMEOUT 10000
 
 
 Game::MovingObject::MovingObject(std::shared_ptr<cg3d::Material> material, std::shared_ptr<cg3d::Model> model, SnakeGame* scene) : Game::GameObject(material, model, scene)
@@ -54,20 +54,6 @@ void Game::MovingObject::GenerateBezierCurve() {
 	float maxX = 3;
 	float maxY = 3;
 	float maxZ = 3;
-	// float minX = 0;
-	// float minY = -1;
-	// float minZ = -5;
-	// float maxX = 4;
-	// float maxY = 5;
-	// float maxZ = 5;
-
-	// float randX = Util::GenerateRandomInRange(minX,maxX);
-	// float randY = Util::GenerateRandomInRange(minY,maxY);
-	// float randZ = Util::GenerateRandomInRange(minZ,maxZ);
-	// std::uniform_int_distribution<int> distributeX(xCoordinate, xCoordinate + 4);
-	// std::uniform_int_distribution<int> distributeY(yCoordinate-1, yCoordinate + 5);
-	// std::uniform_int_distribution<int> distributeZ(zCoordinate-5, zCoordinate + 5 );
-
 
 	pRow1 = Eigen::Vector3f(Util::GenerateRandomInRange(minX,maxX), Util::GenerateRandomInRange(minY,maxY), Util::GenerateRandomInRange(minZ,maxZ));
 	pRow2 = Eigen::Vector3f(Util::GenerateRandomInRange(minX,maxX), Util::GenerateRandomInRange(minY,maxY), Util::GenerateRandomInRange(minZ,maxZ));
@@ -86,23 +72,19 @@ void Game::MovingObject::GenerateBezierCurve() {
 
 	MG = M * curvePoints;
 
-	// DrawPoints(); 
+	DrawPoints(); 
 }
 
 Eigen::Vector3f Game::MovingObject::GenerateBezierVec()
 {
-	// GenerateBezierCurve();
-
  	T[0] = powf(t, 3);
 	T[1] = powf(t, 2);
 	T[2] = t;
 	T[3] = 1;
 
 	currentPosition = (T * MG);
-	// model->Translate(currentPosition.cast<float>());
 
 	double dampener = DAMPENER;
-	// Eigen::Vector3f moveVec = currentPosition.cast<float>().normalized() * dampener * speed;
 	Eigen::Vector3f moveVec = currentPosition.cast<float>().normalized() * dampener * speed;
 	this->moveVec = moveVec;
 	return(moveVec);
@@ -143,7 +125,6 @@ void Game::MovingObject::InitCurveModel(){
 	curveModel->showFaces = false;
 	curveModel->showWireframe = true;
 	curveModel->isHidden = true;
-	// curveModel->mode = 3;
 	curveModel->SetTransform(model->GetAggregatedTransform());
 	scene->root->AddChild(curveModel);
 	curveModel->SetPickable(true);
@@ -152,7 +133,6 @@ void Game::MovingObject::InitCurveModel(){
 }
 
 void Game::MovingObject::DrawPoints() {
-	// Eigen::Vector3d drawingColor = Eigen::RowVector3d(1, 1, 1);
 	Eigen::Matrix3d color = Eigen::Matrix3d::Ones();
 	auto mesh = curveModel->GetMeshList();    
 	Eigen::MatrixXd verts = mesh[0]->data[0].vertices;

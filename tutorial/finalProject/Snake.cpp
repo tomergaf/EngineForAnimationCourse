@@ -38,8 +38,8 @@
 using namespace cg3d;
 using namespace std;
 
-#define MAX_HEALTH 5.0 //TODO make this config file property
-#define MOVE_SPEED 0.005 //TODO make this config file property
+#define MAX_HEALTH 10.0 
+#define MOVE_SPEED 0.005 
 
 namespace Game{
 
@@ -63,13 +63,11 @@ std::shared_ptr<AutoMorphingModel> Snake::GetModel(){
  }
 
 std::shared_ptr<Snake> Snake::CreateSnake(std::shared_ptr<cg3d::Material> program, std::shared_ptr<cg3d::AutoMorphingModel> model, int numOfLinks, SnakeGame* scene){
-    // return std::shared_ptr<Snake>{new Snake{program, model, numOfLinks}};
     return std::shared_ptr<Snake>{new Snake(program, model, numOfLinks, scene)};
  }
 
  void Snake::GetHit(float amount)
  {
-    //multiply by modifier - TEMP no modifier
     DecreaseHealth(amount);
  }
 
@@ -135,15 +133,11 @@ void Snake::InitSnake(){
     // cyls[0]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
     link = new GameObject(snakeProgram, cyls[0], scene);
     link->partOfSnake = true;
-    // links.push_back(std::make_shared<Game::GameObject>(*link));
     links.push_back(std::make_shared<Game::GameObject>(*link));
     cyls[0]->SetCenter(Eigen::Vector3f(-linkLen,0,0));
     // cyls[0]->RotateByDegree(90, Eigen::Vector3f(0,1,0));
     autoSnake->AddChild(cyls[0]);
-    // scene->root->AddChild(cyls[0]);
-    // add first link to game objects list
 
-    //TEMP
     for(int i = 1;i < numOfLinks; i++)
         { 
         //cyls
@@ -153,20 +147,11 @@ void Snake::InitSnake(){
         cyls[i]->SetCenter(Eigen::Vector3f(-linkLen,0,0));
         // cyls[i]->RotateByDegree(90, Eigen::Vector3f(0,1,0));
         cyls[i-1]->AddChild(cyls[i]);   
-        // scene->root->AddChild(cyls[i]);   
-        //TEMP
         link = new GameObject(snakeProgram, cyls[i], scene);
         link->partOfSnake = true;
         links.push_back(std::make_shared<Game::GameObject>(*link));
-        // cyls[i]->AddChild(cyls[i-1]);   
-
       
     }
-    // cyls[0]->Translate({0,0,0.8f*scaleFactor});
-
-    // autoSnake->AddChild(cyls[numOfLinks-1]);
-
-    // cyls[0]->RotateByDegree(90, Eigen::Vector3f(0,1,0));
     InitGameValues();
     initJoints();
     
